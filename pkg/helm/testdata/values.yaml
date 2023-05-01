@@ -1,0 +1,13 @@
+hello: world
+age: 14
+height: 3.3
+
+object:
+  nestedString: a string
+  nestedBool: true
+
+anArray:
+  - foo
+  - bar
+
+aNullValue:
