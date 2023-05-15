@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/massdriver-cloud/schema-generator/pkg/helm"
+	"github.com/massdriver-cloud/airlock/pkg/helm"
 )
 
 func TestRun(t *testing.T) {

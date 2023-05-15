@@ -3,7 +3,7 @@ package terraform_test
 import (
 	"testing"
 
-	"github.com/massdriver-cloud/schema-generator/pkg/terraform"
+	"github.com/massdriver-cloud/airlock/pkg/terraform"
 )
 
 func TestRun(t *testing.T) {

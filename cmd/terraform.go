@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/massdriver-cloud/schema-generator/pkg/terraform"
+	"github.com/massdriver-cloud/airlock/pkg/terraform"
 	"github.com/spf13/cobra"
 )
 

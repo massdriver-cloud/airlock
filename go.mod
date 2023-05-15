@@ -1,4 +1,4 @@
-module github.com/massdriver-cloud/schema-generator
+module github.com/massdriver-cloud/airlock
 
 go 1.19
 

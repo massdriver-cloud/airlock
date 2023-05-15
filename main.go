@@ -1,9 +1,6 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package main
 
-import "github.com/massdriver-cloud/schema-generator/cmd"
+import "github.com/massdriver-cloud/airlock/cmd"
 
 func main() {
 	cmd.Execute()
