@@ -10,7 +10,7 @@ import (
 )
 
 var rootCmd = &cobra.Command{
-	Use: "schema-generator",
+	Use: "airlock",
 }
 
 func Execute() {
