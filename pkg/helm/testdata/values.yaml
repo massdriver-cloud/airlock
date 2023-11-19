@@ -1,13 +1,21 @@
+# An example string variable
 hello: world
+
+# An example integer variable
 age: 14
+
+# An example float variable
 height: 3.3
 
+# An example object variable
 object:
+  # A nested variable
   nestedString: a string
   nestedBool: true
 
-anArray:
+# An example array variable
+array:
   - foo
   - bar
 
-aNullValue:
+nullValue:

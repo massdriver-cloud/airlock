@@ -7,13 +7,16 @@ require (
 	github.com/iancoleman/orderedmap v0.2.0
 	github.com/invopop/jsonschema v0.7.0
 	github.com/spf13/cobra v1.2.1
+	github.com/stretchr/testify v1.7.0
 	github.com/terraform-docs/terraform-docs v0.16.0
 	github.com/zclconf/go-cty v1.12.1
+	gopkg.in/yaml.v3 v3.0.1
 )
 
 require (
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-textseg/v13 v13.0.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/google/go-cmp v0.5.5 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -22,6 +25,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.9.3 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
@@ -33,5 +37,4 @@ require (
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

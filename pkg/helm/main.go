@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/iancoleman/orderedmap"
 	"github.com/invopop/jsonschema"
@@ -48,7 +49,11 @@ func Run(valuesPath string) (string, error) {
 
 func parseNameNode(schema *jsonschema.Schema, node *yaml.Node) error {
 	schema.Title = node.Value
-	schema.Description = node.HeadComment
+
+	description := strings.TrimLeft(node.HeadComment, "# \t")
+	if len(description) > 0 {
+		schema.Description = description
+	}
 
 	return nil
 }
@@ -145,6 +150,7 @@ func parseMapNode(schema *jsonschema.Schema, node *yaml.Node) error {
 		}
 		if property != nil {
 			schema.Properties.Set(nameNode.Value, property)
+			schema.Required = append(schema.Required, nameNode.Value)
 		}
 	}
 
@@ -159,8 +165,9 @@ func parseArrayNode(schema *jsonschema.Schema, node *yaml.Node) error {
 	}
 	schema.Items = new(jsonschema.Schema)
 	parseValueNode(schema.Items, node.Content[0])
+
 	// Set the default back to nil since we don't want to default all items to the first type in the list
-	schema.Items.Default = nil
+	node.Decode(&schema.Default)
 
 	return nil
 }

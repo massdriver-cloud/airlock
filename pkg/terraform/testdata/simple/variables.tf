@@ -44,3 +44,7 @@ variable "testmap" {
   type = map(string)
   description = "An example map variable"
 }
+
+variable "nodescription" {
+  type = string
+}

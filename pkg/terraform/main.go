@@ -52,13 +52,16 @@ func variableToSchema(variable *tfd.Input) (*jsonschema.Schema, error) {
 	hydrateSchemaFromNameAndType(variable.Name, variableType, schema)
 
 	schema.Description = string(variable.Description)
-	schema.Default = variable.Default
+
+	if variable.Default.Raw() != nil {
+		schema.Default = variable.Default
+	}
 
 	return schema, nil
 }
 
 func variableTypeStringToCtyType(variableType string) (cty.Type, error) {
-	expr, diags := hclsyntax.ParseExpression([]byte(variableType), "whatever.foo", hcl.Pos{Line: 1, Column: 1})
+	expr, diags := hclsyntax.ParseExpression([]byte(variableType), "", hcl.Pos{Line: 1, Column: 1})
 	if len(diags) != 0 {
 		return cty.NilType, errors.New(diags.Error())
 	}
@@ -76,8 +79,10 @@ func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *jsonschema.S
 		hydrateMapSchema(name, ty, schema)
 	} else if ty.IsObjectType() {
 		hydrateObjectSchema(name, ty, schema)
-	} else if ty.IsCollectionType() {
+	} else if ty.IsListType() {
 		hydrateArraySchema(name, ty, schema)
+	} else if ty.IsSetType() {
+		hydrateSetSchema(name, ty, schema)
 	}
 	return nil
 }
@@ -111,6 +116,9 @@ func hydrateObjectSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
 func hydrateMapSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
 	schema.Title = name
 	schema.Type = "object"
+	schema.PropertyNames = &jsonschema.Schema{
+		Pattern: "^.*$",
+	}
 	schema.AdditionalProperties = new(jsonschema.Schema)
 	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.AdditionalProperties)
 }
@@ -119,5 +127,11 @@ func hydrateArraySchema(name string, ty cty.Type, schema *jsonschema.Schema) {
 	schema.Title = name
 	schema.Type = "array"
 	schema.Items = new(jsonschema.Schema)
+	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.Items)
+}
+
+func hydrateSetSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
+	hydrateArraySchema(name, ty, schema)
+	schema.UniqueItems = true
 	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.Items)
 }
