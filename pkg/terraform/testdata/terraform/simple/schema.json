@@ -1,24 +1,3 @@
-package terraform_test
-
-import (
-	"testing"
-
-	"github.com/massdriver-cloud/airlock/pkg/terraform"
-
-	"github.com/stretchr/testify/require"
-)
-
-func TestRun(t *testing.T) {
-	type testData struct {
-		name       string
-		modulePath string
-		want       string
-	}
-	tests := []testData{
-		{
-			name:       "simple",
-			modulePath: "testdata/simple/",
-			want: `
 {
 	"required": [
 		"teststring",
@@ -108,18 +87,5 @@ func TestRun(t *testing.T) {
 			"title": "nodescription",
 			"type": "string"
 		}
-	}
-}
-`,
-		},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := terraform.Run(tc.modulePath)
-			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
-			require.JSONEq(t, got, tc.want)
-		})
 	}
 }

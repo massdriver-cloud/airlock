@@ -1,0 +1,28 @@
+{
+    "properties": {
+        "addPropFalse": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "foo": {
+                    "type": "string"
+                }
+            }
+        },
+        "addPropTrue": {
+            "type": "object",
+            "additionalProperties": true
+        },
+        "addPropSchema": {
+            "type": "object",
+            "additionalProperties": {
+                "type": "object",
+                "properties": {
+                    "bar": {
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}

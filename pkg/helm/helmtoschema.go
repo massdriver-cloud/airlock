@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/iancoleman/orderedmap"
-	"github.com/invopop/jsonschema"
+	"github.com/massdriver-cloud/airlock/pkg/schema"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"gopkg.in/yaml.v3"
 )
 
@@ -18,7 +18,7 @@ func (e *nullError) Error() string {
 	return "type is indeterminate (null)"
 }
 
-func Run(valuesPath string) (string, error) {
+func HelmToSchema(valuesPath string) (string, error) {
 	valuesBytes, readErr := os.ReadFile(valuesPath)
 	if readErr != nil {
 		return "", readErr
@@ -33,7 +33,7 @@ func Run(valuesPath string) (string, error) {
 
 	// the top level node is a document node. We need to go one layer
 	// deeper to get the actual yaml content
-	params := new(jsonschema.Schema)
+	params := new(schema.Schema)
 	err := parseMapNode(params, valuesDocument.Content[0])
 	if err != nil {
 		return "", err
@@ -47,7 +47,7 @@ func Run(valuesPath string) (string, error) {
 	return string(bytes), nil
 }
 
-func parseNameNode(schema *jsonschema.Schema, node *yaml.Node) error {
+func parseNameNode(schema *schema.Schema, node *yaml.Node) error {
 	schema.Title = node.Value
 
 	description := strings.TrimLeft(node.HeadComment, "# \t")
@@ -58,7 +58,7 @@ func parseNameNode(schema *jsonschema.Schema, node *yaml.Node) error {
 	return nil
 }
 
-func parseValueNode(schema *jsonschema.Schema, node *yaml.Node) error {
+func parseValueNode(schema *schema.Schema, node *yaml.Node) error {
 	switch node.Tag {
 	case "!!str":
 		return parseStringNode(schema, node)
@@ -79,65 +79,65 @@ func parseValueNode(schema *jsonschema.Schema, node *yaml.Node) error {
 	}
 }
 
-func nodeToProperty(name, value *yaml.Node) (*jsonschema.Schema, error) {
-	schema := new(jsonschema.Schema)
+func nodeToProperty(name, value *yaml.Node) (*schema.Schema, error) {
+	sch := new(schema.Schema)
 
-	if err := parseNameNode(schema, name); err != nil {
+	if err := parseNameNode(sch, name); err != nil {
 		return nil, err
 	}
 
-	err := parseValueNode(schema, value)
+	err := parseValueNode(sch, value)
 	if err != nil {
 		if _, ok := err.(*nullError); ok {
-			fmt.Printf("Warning: Skipping field %s. Reason: %v\n", schema.Title, err)
+			fmt.Printf("Warning: Skipping field %s. Reason: %v\n", sch.Title, err)
 			return nil, nil
 		} else {
 			return nil, err
 		}
 	}
 
-	return schema, nil
+	return sch, nil
 }
 
-func parseStringNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "string"
-	schema.Default = node.Value
+func parseStringNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "string"
+	sch.Default = node.Value
 	return nil
 }
 
-func parseIntegerNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "integer"
+func parseIntegerNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "integer"
 	def, err := strconv.Atoi(node.Value)
 	if err != nil {
 		return err
 	}
-	schema.Default = def
+	sch.Default = def
 	return nil
 }
 
-func parseFloatNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "number"
+func parseFloatNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "number"
 	def, err := strconv.ParseFloat(node.Value, 64)
 	if err != nil {
 		return err
 	}
-	schema.Default = def
+	sch.Default = def
 	return nil
 }
 
-func parseBooleanNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "boolean"
+func parseBooleanNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "boolean"
 	def, err := strconv.ParseBool(node.Value)
 	if err != nil {
 		return err
 	}
-	schema.Default = def
+	sch.Default = def
 	return nil
 }
 
-func parseMapNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "object"
-	schema.Properties = orderedmap.New()
+func parseMapNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "object"
+	sch.Properties = orderedmap.New[string, *schema.Schema]()
 
 	nodes := node.Content
 	// Nodes come in twos - the first is the name, the second is the value
@@ -149,25 +149,31 @@ func parseMapNode(schema *jsonschema.Schema, node *yaml.Node) error {
 			return err
 		}
 		if property != nil {
-			schema.Properties.Set(nameNode.Value, property)
-			schema.Required = append(schema.Required, nameNode.Value)
+			sch.Properties.Set(nameNode.Value, property)
+			sch.Required = append(sch.Required, nameNode.Value)
 		}
 	}
 
 	return nil
 }
 
-func parseArrayNode(schema *jsonschema.Schema, node *yaml.Node) error {
-	schema.Type = "array"
+func parseArrayNode(sch *schema.Schema, node *yaml.Node) error {
+	sch.Type = "array"
 
 	if len(node.Content) == 0 {
-		return fmt.Errorf("error: cannot infer element type in array %s. Arrays cannot be empty or the type is ambiguous", schema.Title)
+		return fmt.Errorf("error: cannot infer element type in array %s. Arrays cannot be empty or the type is ambiguous", sch.Title)
 	}
-	schema.Items = new(jsonschema.Schema)
-	parseValueNode(schema.Items, node.Content[0])
+	sch.Items = new(schema.Schema)
+	err := parseValueNode(sch.Items, node.Content[0])
+	if err != nil {
+		return err
+	}
 
 	// Set the default back to nil since we don't want to default all items to the first type in the list
-	node.Decode(&schema.Default)
+	err = node.Decode(&sch.Default)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }

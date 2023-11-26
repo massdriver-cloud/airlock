@@ -88,7 +88,7 @@ func TestRun(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := helm.Run(tc.modulePath)
+			got, err := helm.HelmToSchema(tc.modulePath)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

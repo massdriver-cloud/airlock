@@ -7,14 +7,14 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
-	"github.com/iancoleman/orderedmap"
-	"github.com/invopop/jsonschema"
+	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/terraform-docs/terraform-docs/print"
 	tfd "github.com/terraform-docs/terraform-docs/terraform"
+	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func Run(modulePath string) (string, error) {
+func TfToSchema(modulePath string) (string, error) {
 	config := print.NewConfig()
 	config.ModuleRoot = modulePath
 
@@ -23,8 +23,8 @@ func Run(modulePath string) (string, error) {
 		return "", err
 	}
 
-	params := new(jsonschema.Schema)
-	params.Properties = orderedmap.New()
+	params := new(schema.Schema)
+	params.Properties = orderedmap.New[string, *schema.Schema]()
 
 	for _, variable := range module.Inputs {
 		variableSchema, err := variableToSchema(variable)
@@ -43,13 +43,16 @@ func Run(modulePath string) (string, error) {
 	return string(bytes), nil
 }
 
-func variableToSchema(variable *tfd.Input) (*jsonschema.Schema, error) {
-	schema := new(jsonschema.Schema)
+func variableToSchema(variable *tfd.Input) (*schema.Schema, error) {
+	schema := new(schema.Schema)
 	variableType, err := variableTypeStringToCtyType(string(variable.Type))
 	if err != nil {
 		return nil, err
 	}
-	hydrateSchemaFromNameAndType(variable.Name, variableType, schema)
+	err = hydrateSchemaFromNameAndType(variable.Name, variableType, schema)
+	if err != nil {
+		return nil, err
+	}
 
 	schema.Description = string(variable.Description)
 
@@ -65,14 +68,14 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, error) {
 	if len(diags) != 0 {
 		return cty.NilType, errors.New(diags.Error())
 	}
-	ty, _, diags := typeexpr.TypeConstraintWithDefaults(expr)
+	ty, diags := typeexpr.TypeConstraint(expr)
 	if len(diags) != 0 {
 		return cty.NilType, errors.New(diags.Error())
 	}
 	return ty, nil
 }
 
-func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *jsonschema.Schema) error {
+func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *schema.Schema) error {
 	if ty.IsPrimitiveType() {
 		hydratePrimitiveSchema(name, ty, schema)
 	} else if ty.IsMapType() {
@@ -87,7 +90,7 @@ func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *jsonschema.S
 	return nil
 }
 
-func hydratePrimitiveSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
+func hydratePrimitiveSchema(name string, ty cty.Type, schema *schema.Schema) {
 	schema.Title = name
 	switch ty {
 	case cty.String:
@@ -99,39 +102,39 @@ func hydratePrimitiveSchema(name string, ty cty.Type, schema *jsonschema.Schema)
 	}
 }
 
-func hydrateObjectSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
-	schema.Title = name
-	schema.Type = "object"
-	schema.Properties = orderedmap.New()
+func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema) {
+	sch.Title = name
+	sch.Type = "object"
+	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	for attName, attType := range ty.AttributeTypes() {
-		attributeSchema := new(jsonschema.Schema)
+		attributeSchema := new(schema.Schema)
 		hydrateSchemaFromNameAndType(attName, attType, attributeSchema)
-		schema.Properties.Set(attName, attributeSchema)
+		sch.Properties.Set(attName, attributeSchema)
 		if !ty.AttributeOptional(attName) {
-			schema.Required = append(schema.Required, attName)
+			sch.Required = append(sch.Required, attName)
 		}
 	}
 }
 
-func hydrateMapSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
-	schema.Title = name
-	schema.Type = "object"
-	schema.PropertyNames = &jsonschema.Schema{
+func hydrateMapSchema(name string, ty cty.Type, sch *schema.Schema) {
+	sch.Title = name
+	sch.Type = "object"
+	sch.PropertyNames = &schema.Schema{
 		Pattern: "^.*$",
 	}
-	schema.AdditionalProperties = new(jsonschema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.AdditionalProperties)
+	sch.AdditionalProperties = new(schema.Schema)
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.AdditionalProperties.(*schema.Schema))
 }
 
-func hydrateArraySchema(name string, ty cty.Type, schema *jsonschema.Schema) {
-	schema.Title = name
-	schema.Type = "array"
-	schema.Items = new(jsonschema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.Items)
+func hydrateArraySchema(name string, ty cty.Type, sch *schema.Schema) {
+	sch.Title = name
+	sch.Type = "array"
+	sch.Items = new(schema.Schema)
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items)
 }
 
-func hydrateSetSchema(name string, ty cty.Type, schema *jsonschema.Schema) {
-	hydrateArraySchema(name, ty, schema)
-	schema.UniqueItems = true
-	hydrateSchemaFromNameAndType("", ty.ElementType(), schema.Items)
+func hydrateSetSchema(name string, ty cty.Type, sch *schema.Schema) {
+	hydrateArraySchema(name, ty, sch)
+	sch.UniqueItems = true
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items)
 }

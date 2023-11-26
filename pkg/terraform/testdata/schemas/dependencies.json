@@ -1,0 +1,38 @@
+{
+    "properties": {
+        "single": {
+            "type": "object",
+            "required": ["foo"],
+            "properties": {
+                "foo": {
+                    "type": "boolean"
+                },
+                "bar": {
+                    "type": "integer"
+                }
+            },
+            "dependencies": {
+                "foo": {
+                    "oneOf": [{
+                        "properties": {
+                            "foo": {
+                                "const": false
+                            }
+                        }
+                    },
+                    {
+                        "properties": {
+                            "foo": {
+                                "const": true
+                            },
+                            "baz": {
+                                "type": "string"
+                            }
+                        },
+                        "required": ["baz"]
+                    }]
+                }
+            }
+        }
+    }
+}
