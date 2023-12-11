@@ -1,4 +1,7 @@
 {
+    "required": [
+        "single"
+    ],
     "properties": {
         "single": {
             "type": "object",

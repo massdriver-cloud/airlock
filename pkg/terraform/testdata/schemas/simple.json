@@ -1,4 +1,13 @@
 {
+    "required": [
+        "stringtest",
+        "integertest",
+        "numbertest",
+        "booltest",
+        "arraytest",
+        "objecttest",
+        "nestedtest"
+    ],
     "properties": {
         "stringtest": {
             "type": "string"

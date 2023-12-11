@@ -1,0 +1,42 @@
+{
+    "properties": {
+        "emptytest": {
+            "type": "string"
+        },
+        "stringtest": {
+            "type": "string",
+            "default": "foo"
+        },
+        "integertest": {
+            "type": "integer",
+            "default": 3
+        },
+        "numbertest": {
+            "type": "number",
+            "default": 3.4
+        },
+        "booltest": {
+            "type": "boolean",
+            "default": true
+        },
+        "arraytest": {
+            "type": "array",
+            "default": ["foo"],
+            "items": {
+                "type": "string"
+            }
+        },
+        "objecttest": {
+            "type": "object",
+            "default": {
+                "foo": "bar"
+            },
+            "required": ["foo"],
+            "properties": {
+                "foo": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

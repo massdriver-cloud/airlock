@@ -1,4 +1,10 @@
 {
+    "required": [
+        "addPropFalse",
+        "addPropTrue",
+        "addPropSchema",
+        "pattProp"
+    ],
     "properties": {
         "addPropFalse": {
             "type": "object",

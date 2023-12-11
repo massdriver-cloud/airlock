@@ -8,11 +8,14 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/terraform"
 )
 
-func TestSchemaToHcl(t *testing.T) {
+func TestSchemaToTf(t *testing.T) {
 	type testData struct {
 		name string
 	}
 	tests := []testData{
+		{
+			name: "default",
+		},
 		{
 			name: "simple",
 		},

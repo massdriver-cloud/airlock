@@ -33,6 +33,19 @@ func SchemaToTf(in io.Reader) ([]byte, error) {
 			"type",
 			typeExprTokens(prop.Value, false),
 		)
+
+		// If this value isn't required, then we should set the default
+		if !slices.Contains(root.Required, prop.Key) {
+			defaultValue, err := json.Marshal(prop.Value.Default)
+			if err != nil {
+				return nil, err
+			}
+
+			varBody.SetAttributeRaw(
+				"default",
+				hclwrite.TokensForIdentifier(string(defaultValue)),
+			)
+		}
 	}
 
 	return f.Bytes(), nil
