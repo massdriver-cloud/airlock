@@ -25,6 +25,9 @@ func TestSchemaToTf(t *testing.T) {
 		{
 			name: "dynamics",
 		},
+		{
+			name: "topleveldep",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

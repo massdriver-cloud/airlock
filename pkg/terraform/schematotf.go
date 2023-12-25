@@ -25,30 +25,40 @@ func SchemaToTf(in io.Reader) ([]byte, error) {
 	f := hclwrite.NewEmptyFile()
 	rootBody := f.Body()
 
-	for prop := root.Properties.Oldest(); prop != nil; prop = prop.Next() {
-		varBlock := rootBody.AppendNewBlock("variable", []string{prop.Key})
-		varBody := varBlock.Body()
-
-		varBody.SetAttributeRaw(
-			"type",
-			typeExprTokens(prop.Value, false),
-		)
-
-		// If this value isn't required, then we should set the default
-		if !slices.Contains(root.Required, prop.Key) {
-			defaultValue, err := json.Marshal(prop.Value.Default)
-			if err != nil {
-				return nil, err
-			}
-
-			varBody.SetAttributeRaw(
-				"default",
-				hclwrite.TokensForIdentifier(string(defaultValue)),
-			)
+	flattenedProperties := schema.ExpandProperties(&root)
+	for prop := flattenedProperties.Oldest(); prop != nil; prop = prop.Next() {
+		required := slices.Contains(root.Required, prop.Key)
+		err = createTopLevelVariableBlock(prop.Key, prop.Value, required, rootBody)
+		if err != nil {
+			return nil, err
 		}
 	}
 
 	return f.Bytes(), nil
+}
+
+func createTopLevelVariableBlock(name string, param *schema.Schema, required bool, body *hclwrite.Body) error {
+	varBlock := body.AppendNewBlock("variable", []string{name})
+	varBody := varBlock.Body()
+
+	varBody.SetAttributeRaw(
+		"type",
+		typeExprTokens(param, false),
+	)
+
+	// If this value isn't required, then we should set the default
+	if !required {
+		defaultValue, err := json.Marshal(param.Default)
+		if err != nil {
+			return err
+		}
+
+		varBody.SetAttributeRaw(
+			"default",
+			hclwrite.TokensForIdentifier(string(defaultValue)),
+		)
+	}
+	return nil
 }
 
 func typeExprTokens(node *schema.Schema, optional bool) hclwrite.Tokens {
@@ -127,62 +137,14 @@ func convertObject(node *schema.Schema) hclwrite.Tokens {
 func parseObject(node *schema.Schema) []hclwrite.ObjectAttrTokens {
 	items := []hclwrite.ObjectAttrTokens{}
 
-	// standard properties
-	props := extractObjectProperties(node, false)
-	items = mergeProperties(items, props)
-
-	// oneOf, anyOf, allOf
-	for _, item := range node.OneOf {
-		oneOf := extractObjectProperties(item, true)
-		items = mergeProperties(items, oneOf)
-	}
-	for _, item := range node.AnyOf {
-		anyOf := extractObjectProperties(item, true)
-		items = mergeProperties(items, anyOf)
-	}
-	for _, item := range node.AllOf {
-		allOf := extractObjectProperties(item, true)
-		items = mergeProperties(items, allOf)
-	}
-
-	// dependencies
-	for _, item := range node.Dependencies {
-		dep := parseObject(item)
-		items = mergeProperties(items, dep)
-	}
-
-	return items
-}
-
-func extractObjectProperties(node *schema.Schema, allOptional bool) []hclwrite.ObjectAttrTokens {
-	properties := []hclwrite.ObjectAttrTokens{}
-	var optional bool
-	for prop := node.Properties.Oldest(); prop != nil; prop = prop.Next() {
-		if allOptional {
-			optional = true
-		} else {
-			optional = !slices.Contains(node.Required, prop.Key)
-		}
-		properties = append(properties, hclwrite.ObjectAttrTokens{
+	flattenedProperties := schema.ExpandProperties(node)
+	for prop := flattenedProperties.Oldest(); prop != nil; prop = prop.Next() {
+		optional := !slices.Contains(node.Required, prop.Key)
+		items = append(items, hclwrite.ObjectAttrTokens{
 			Name:  hclwrite.TokensForIdentifier(prop.Key),
 			Value: typeExprTokens(prop.Value, optional),
 		})
 	}
-	return properties
-}
 
-func mergeProperties(existing, new []hclwrite.ObjectAttrTokens) []hclwrite.ObjectAttrTokens {
-	for _, att := range new {
-		exists := false
-		for _, exist := range existing {
-			if string(exist.Name.Bytes()) == string(att.Name.Bytes()) {
-				exists = true
-				break
-			}
-		}
-		if !exists {
-			existing = append(existing, att)
-		}
-	}
-	return existing
+	return items
 }

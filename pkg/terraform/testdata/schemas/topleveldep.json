@@ -1,0 +1,32 @@
+{
+    "required": [
+        "single"
+    ],
+    "properties": {
+        "single": {
+            "type": "string"
+            }
+    },
+    "dependencies": {
+        "single": {
+            "oneOf": [{
+                "properties": {
+                    "single": {
+                        "const": "something"
+                    }
+                }
+            },
+            {
+                "properties": {
+                    "single": {
+                        "const": "somethingelse"
+                    },
+                    "foo": {
+                        "type": "string"
+                    }
+                },
+                "required": ["foo"]
+            }]
+        }
+    }
+}

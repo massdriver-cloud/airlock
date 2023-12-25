@@ -46,8 +46,7 @@
 				}
 			},
 			"required": [
-				"name",
-				"address"
+				"name"
 			],
 			"description": "An example object variable",
 			"default": {

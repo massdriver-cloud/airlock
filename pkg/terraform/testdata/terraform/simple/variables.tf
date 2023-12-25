@@ -19,7 +19,7 @@ variable "testbool" {
 variable "testobject" {
   type = object({
     name    = string
-    address = string
+    address = optional(string)
     age     = optional(number)
   })
   description = "An example object variable"
