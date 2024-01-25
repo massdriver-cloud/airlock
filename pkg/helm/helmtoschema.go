@@ -161,7 +161,7 @@ func parseArrayNode(sch *schema.Schema, node *yaml.Node) error {
 	sch.Type = "array"
 
 	if len(node.Content) == 0 {
-		return fmt.Errorf("error: cannot infer element type in array %s. Arrays cannot be empty or the type is ambiguous", sch.Title)
+		return &nullError{}
 	}
 	sch.Items = new(schema.Schema)
 	err := parseValueNode(sch.Items, node.Content[0])
