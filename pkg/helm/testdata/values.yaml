@@ -18,4 +18,7 @@ array:
   - foo
   - bar
 
+# An empty array should not cause an error
+emptyArray: []
+
 nullValue:
