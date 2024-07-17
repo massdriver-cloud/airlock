@@ -37,6 +37,13 @@
                     "type": "string"
                 }
             }
+        },
+        "requiredtest": {
+            "type": "string",
+            "default": "foo"
         }
-    }
+    },
+    "required": [
+        "requiredtest"
+    ]
 }

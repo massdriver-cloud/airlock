@@ -28,3 +28,6 @@ variable "objecttest" {
   })
   default = {"foo":"bar"}
 }
+variable "requiredtest" {
+  type = string
+}
