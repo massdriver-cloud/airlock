@@ -51,7 +51,54 @@ func TestBicepToSchema(t *testing.T) {
 		},
 		"testObject": {
 			"title": "testObject",
-			"type": "object"
+			"type": "object",
+			"required": ["age","friends","member","name","nested"],
+			"properties": {
+				"name": {
+					"type": "string",
+					"title": "name",
+					"default": "hugh"
+				},
+				"age": {
+					"type": "integer",
+					"title": "age",
+					"default": 20
+				},
+				"member": {
+					"type": "boolean",
+					"title": "member",
+					"default": true
+				},
+				"nested": {
+					"type": "object",
+					"title": "nested",
+					"required": ["foo","nested2"],
+					"properties": {
+						"foo": {
+							"type": "string",
+							"title": "foo",
+							"default": "bar"
+						},
+						"nested2": {
+							"type": "object",
+							"title": "nested2",
+							"required": ["hello"],
+							"properties": {
+								"hello": {
+									"type": "string",
+									"title": "hello",
+									"default": "world"
+								}
+							}
+						}
+					}
+				},
+				"friends": {
+					"type": "array",
+					"title": "friends",
+					"default": ["steve", "bob"]
+				}
+			}
 		}
 	}
 }

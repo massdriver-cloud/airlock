@@ -13,7 +13,7 @@ param testObject object = {
             hello: 'world'
         }
     }
-    friends = ['steve', 'bob']
+    friends: ['steve', 'bob']
 }
 
 resource whatever 'foobar' = {
