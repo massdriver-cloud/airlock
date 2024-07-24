@@ -30,10 +30,9 @@ type bicepParamMetadata struct {
 }
 
 func BicepToSchema(valuesPath string) (string, error) {
+	// using the github.com/Checkmarx/kics parser since he already did the heavy lifting to parse a bicep template
 	parser := bp.Parser{}
 
-	// the top level node is a document node. We need to go one layer
-	// deeper to get the actual yaml content
 	params := new(schema.Schema)
 	params.Type = "object"
 	params.Properties = orderedmap.New[string, *schema.Schema]()
@@ -47,7 +46,7 @@ func BicepToSchema(valuesPath string) (string, error) {
 	for name, value := range doc[0]["parameters"].(map[string]interface{}) {
 		bicepParam := bicepParam{}
 
-		// marshall and unmarshall to JSON to convert param data into struct for easier parsing
+		// marshall to json and unmarshall into custom struct to make bicep param easier to access
 		bytes, err := json.Marshal(value)
 		if err != nil {
 			return "", err
@@ -69,6 +68,7 @@ func BicepToSchema(valuesPath string) (string, error) {
 		params.Properties.Set(name, property)
 		params.Required = append(params.Required, name)
 	}
+	// sorting this here just to help with testing. The order doesn't matter, but to our test suite it does.
 	slices.Sort(params.Required)
 
 	out, err := json.Marshal(params)
