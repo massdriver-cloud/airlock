@@ -3,6 +3,7 @@ package bicep
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"reflect"
 	"slices"
 
@@ -13,13 +14,19 @@ import (
 )
 
 type bicepParam struct {
-	TypeString   string             `json:"type"`
-	DefaultValue interface{}        `json:"defaultValue"`
-	Metadata     bicepParamMetadata `json:"metadata"`
+	TypeString    string             `json:"type"`
+	DefaultValue  interface{}        `json:"defaultValue"`
+	AllowedValues []interface{}      `json:"allowedValues"`
+	Metadata      bicepParamMetadata `json:"metadata"`
+	MinLength     *uint64            `json:"minLength"`
+	MinValue      *uint64            `json:"minValue"`
+	MaxLength     *uint64            `json:"maxLength"`
+	MaxValue      *uint64            `json:"maxValue"`
 }
 
 type bicepParamMetadata struct {
-	Description string `json:"description"`
+	Description string                 `json:"description"`
+	Metadata    map[string]interface{} `json:"metadata"`
 }
 
 func BicepToSchema(valuesPath string) (string, error) {
@@ -79,10 +86,12 @@ func parseBicepParam(sch *schema.Schema, bicepParam bicepParam) error {
 	case "bool":
 		return parseBoolParam(sch, bicepParam)
 	case "string":
-		return parseStringParam(sch, bicepParam)
+		return parseStringParam(sch, bicepParam, false)
+	case "secureString":
+		return parseStringParam(sch, bicepParam, true)
 	case "array":
 		return parseArrayParam(sch, bicepParam)
-	case "object":
+	case "object", "secureObject":
 		return parseObjectParam(sch, bicepParam)
 	default:
 		return errors.New("unknown type: " + bicepParam.TypeString)
@@ -92,6 +101,18 @@ func parseBicepParam(sch *schema.Schema, bicepParam bicepParam) error {
 func parseIntParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.Type = "integer"
 	sch.Default = bicepParam.DefaultValue
+
+	if bicepParam.AllowedValues != nil && len(bicepParam.AllowedValues) == 1 {
+		sch.Enum = bicepParam.AllowedValues[0].([]interface{})
+	}
+
+	if bicepParam.MinValue != nil {
+		sch.Minimum = json.Number(fmt.Sprintf("%d", *bicepParam.MinValue))
+	}
+	if bicepParam.MaxValue != nil {
+		sch.Maximum = json.Number(fmt.Sprintf("%d", *bicepParam.MaxValue))
+	}
+
 	return nil
 }
 
@@ -101,22 +122,40 @@ func parseBoolParam(sch *schema.Schema, bicepParam bicepParam) error {
 	return nil
 }
 
-func parseStringParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseStringParam(sch *schema.Schema, bicepParam bicepParam, secure bool) error {
 	sch.Type = "string"
 	sch.Default = bicepParam.DefaultValue
+
+	if secure {
+		sch.Format = "password"
+	}
+
+	if bicepParam.AllowedValues != nil && len(bicepParam.AllowedValues) == 1 {
+		sch.Enum = bicepParam.AllowedValues[0].([]interface{})
+	}
+
+	sch.MinLength = bicepParam.MinLength
+	sch.MaxLength = bicepParam.MaxLength
+
 	return nil
 }
 
 func parseArrayParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.Type = "array"
-	sch.Default = bicepParam.DefaultValue
+
+	sch.MinItems = bicepParam.MinLength
+	sch.MaxItems = bicepParam.MaxLength
+
+	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.([]interface{})) != 0 {
+		parseArrayType(sch, bicepParam.DefaultValue.([]interface{}))
+	}
 	return nil
 }
 
 func parseObjectParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.Type = "object"
 
-	if bicepParam.DefaultValue != nil {
+	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.(map[string]interface{})) > 1 {
 		parseObjectType(sch, bicepParam.DefaultValue.(map[string]interface{}))
 	}
 	return nil
@@ -132,7 +171,6 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error 
 		}
 
 		property := new(schema.Schema)
-
 		property.Title = name
 
 		switch reflect.TypeOf(value).Kind() {
@@ -186,6 +224,8 @@ func parseArrayType(sch *schema.Schema, value []interface{}) error {
 	default:
 		return errors.New("unknown type: " + reflect.TypeOf(elem).String())
 	}
+
+	sch.Items = items
 
 	return nil
 }

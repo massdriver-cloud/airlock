@@ -21,9 +21,14 @@ func TestBicepToSchema(t *testing.T) {
 {
 	"required": [
 		"testArray",
+		"testArrayObject",
 		"testBool",
+		"testEmptyArray",
+		"testEmptyObject",
 		"testInt",
 		"testObject",
+		"testSecureObject",
+		"testSecureString",
 		"testString"
 	],
 	"type": "object",
@@ -32,11 +37,17 @@ func TestBicepToSchema(t *testing.T) {
 			"title": "testString",
 			"type": "string",
 			"description": "an example string parameter",
+			"minLength": 2,
+			"maxLength": 20,
+			"enum": ["foo","bar"],
 			"default": "foo"
 		},
 		"testInt": {
 			"title": "testInt",
 			"type": "integer",
+			"minimum": 0,
+			"maximum": 10,
+			"enum": [1,5,7],
 			"default": 1
 		},
 		"testBool": {
@@ -47,7 +58,12 @@ func TestBicepToSchema(t *testing.T) {
 		"testArray": {
 			"title": "testArray",
 			"type": "array",
-			"default": [1, 2, 3]
+			"minItems": 1,
+			"maxItems": 8,
+			"default": [1, 2, 3],
+			"items": {
+				"type": "integer"
+			}
 		},
 		"testObject": {
 			"title": "testObject",
@@ -96,9 +112,49 @@ func TestBicepToSchema(t *testing.T) {
 				"friends": {
 					"type": "array",
 					"title": "friends",
-					"default": ["steve", "bob"]
+					"default": ["steve", "bob"],
+					"items": {
+						"type": "string"
+					}
 				}
 			}
+		},
+		"testArrayObject": {
+			"type": "array",
+			"title": "testArrayObject",
+			"items": {
+				"type": "object",
+				"required": ["foo", "num"],
+				"properties": {
+					"foo": {
+						"type": "string",
+						"title": "foo",
+						"default": "bar"
+					},
+					"num": {
+						"type": "integer",
+						"title": "num",
+						"default": 10
+					}
+				}
+			}
+		},
+		"testEmptyArray": {
+			"type": "array",
+			"title": "testEmptyArray"
+		},
+		"testEmptyObject": {
+			"type": "object",
+			"title": "testEmptyObject"
+		},
+		"testSecureObject": {
+			"type": "object",
+			"title": "testSecureObject"
+		},
+		"testSecureString": {
+			"type": "string",
+			"title": "testSecureString",
+			"format": "password"
 		}
 	}
 }
