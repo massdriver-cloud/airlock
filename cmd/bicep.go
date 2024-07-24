@@ -8,24 +8,24 @@ import (
 )
 
 func NewCmdBicep() *cobra.Command {
-	helmCmd := &cobra.Command{
+	bicepCmd := &cobra.Command{
 		Use:   "bicep",
 		Short: "Bicep translations",
-		//Long:  helpdocs.MustRender("artifact"),
+		Long:  helpdocs.MustRender("bicep"),
 	}
 
 	// Import
-	helmInputCmd := &cobra.Command{
+	bicepInputCmd := &cobra.Command{
 		Use:   `input`,
 		Short: "Ingest a bicep template file and generate a JSON Schema",
 		Args:  cobra.ExactArgs(1),
-		// Long:  helpdocs.MustRender("helm/input"),
+		Long:  helpdocs.MustRender("bicep/input"),
 		RunE: runBicepInput,
 	}
 
-	helmCmd.AddCommand(helmInputCmd)
+	bicepCmd.AddCommand(bicepInputCmd)
 
-	return helmCmd
+	return bicepCmd
 }
 
 func runBicepInput(cmd *cobra.Command, args []string) error {

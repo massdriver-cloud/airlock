@@ -12,7 +12,7 @@ func NewCmdHelm() *cobra.Command {
 	helmCmd := &cobra.Command{
 		Use:   "helm",
 		Short: "Helm (YAML) translations",
-		//Long:  helpdocs.MustRender("artifact"),
+		Long:  helpdocs.MustRender("helm"),
 	}
 
 	// Import
