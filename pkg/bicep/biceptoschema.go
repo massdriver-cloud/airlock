@@ -29,7 +29,7 @@ type bicepParamMetadata struct {
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
-func BicepToSchema(valuesPath string) (string, error) {
+func BicepToSchema(templatePath string) (string, error) {
 	// using the github.com/Checkmarx/kics parser since he already did the heavy lifting to parse a bicep template
 	parser := bp.Parser{}
 
@@ -38,7 +38,7 @@ func BicepToSchema(valuesPath string) (string, error) {
 	params.Properties = orderedmap.New[string, *schema.Schema]()
 	params.Required = []string{}
 
-	doc, _, err := parser.Parse(valuesPath, nil)
+	doc, _, err := parser.Parse(templatePath, nil)
 	if err != nil {
 		return "", err
 	}
@@ -202,30 +202,31 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error 
 }
 
 func parseArrayType(sch *schema.Schema, value []interface{}) error {
-	items := new(schema.Schema)
+	if len(value) > 0 {
+		items := new(schema.Schema)
 
-	elem := value[0]
-	switch reflect.TypeOf(elem).Kind() {
-	case reflect.Float64:
-		items.Type = "integer"
-		sch.Default = value
-	case reflect.Bool:
-		items.Type = "boolean"
-		sch.Default = value
-	case reflect.String:
-		items.Type = "string"
-		sch.Default = value
-	case reflect.Slice:
-		items.Type = "array"
-		parseArrayType(items, elem.([]interface{}))
-	case reflect.Map:
-		items.Type = "object"
-		parseObjectType(items, elem.(map[string]interface{}))
-	default:
-		return errors.New("unknown type: " + reflect.TypeOf(elem).String())
+		elem := value[0]
+		switch reflect.TypeOf(elem).Kind() {
+		case reflect.Float64:
+			items.Type = "integer"
+			sch.Default = value
+		case reflect.Bool:
+			items.Type = "boolean"
+			sch.Default = value
+		case reflect.String:
+			items.Type = "string"
+			sch.Default = value
+		case reflect.Slice:
+			items.Type = "array"
+			parseArrayType(items, elem.([]interface{}))
+		case reflect.Map:
+			items.Type = "object"
+			parseObjectType(items, elem.(map[string]interface{}))
+		default:
+			return errors.New("unknown type: " + reflect.TypeOf(elem).String())
+		}
+
+		sch.Items = items
 	}
-
-	sch.Items = items
-
 	return nil
 }

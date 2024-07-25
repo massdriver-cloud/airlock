@@ -26,6 +26,7 @@ param testObject object = {
         }
     }
     friends: ['steve', 'bob']
+    empty: []
 }
 
 param testArrayObject array = [

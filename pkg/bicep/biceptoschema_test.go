@@ -9,14 +9,14 @@ import (
 
 func TestBicepToSchema(t *testing.T) {
 	type testData struct {
-		name       string
-		modulePath string
-		want       string
+		name      string
+		bicepPath string
+		want      string
 	}
 	tests := []testData{
 		{
-			name:       "simple",
-			modulePath: "testdata/template.bicep",
+			name:      "simple",
+			bicepPath: "testdata/template.bicep",
 			want: `
 {
 	"required": [
@@ -68,7 +68,7 @@ func TestBicepToSchema(t *testing.T) {
 		"testObject": {
 			"title": "testObject",
 			"type": "object",
-			"required": ["age","friends","member","name","nested"],
+			"required": ["age","empty","friends","member","name","nested"],
 			"properties": {
 				"name": {
 					"type": "string",
@@ -116,6 +116,10 @@ func TestBicepToSchema(t *testing.T) {
 					"items": {
 						"type": "string"
 					}
+				},
+				"empty": {
+					"type": "array",
+					"title": "empty"
 				}
 			}
 		},
@@ -163,7 +167,7 @@ func TestBicepToSchema(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := bicep.BicepToSchema(tc.modulePath)
+			got, err := bicep.BicepToSchema(tc.bicepPath)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

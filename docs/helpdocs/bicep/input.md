@@ -1,4 +1,4 @@
-# Translate from Helm values.yaml to JSON Schema
+# Translate from Bicep template parameters to JSON Schema
 
 This command will parse a bicep template file and create a JSON Schema which reflects the params.
 

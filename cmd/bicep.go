@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/massdriver-cloud/airlock/docs/helpdocs"
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
 	"github.com/spf13/cobra"
 )
@@ -20,7 +21,7 @@ func NewCmdBicep() *cobra.Command {
 		Short: "Ingest a bicep template file and generate a JSON Schema",
 		Args:  cobra.ExactArgs(1),
 		Long:  helpdocs.MustRender("bicep/input"),
-		RunE: runBicepInput,
+		RunE:  runBicepInput,
 	}
 
 	bicepCmd.AddCommand(bicepInputCmd)
