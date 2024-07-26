@@ -46,7 +46,7 @@ func BicepToSchema(templatePath string) (string, error) {
 	for name, value := range doc[0]["parameters"].(map[string]interface{}) {
 		bicepParam := bicepParam{}
 
-		// marshall to json and unmarshall into custom struct to make bicep param easier to access
+		// marshal to json and unmarshal into custom struct to make bicep param easier to access
 		bytes, err := json.Marshal(value)
 		if err != nil {
 			return "", err
