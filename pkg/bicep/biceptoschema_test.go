@@ -1,6 +1,7 @@
 package bicep_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
@@ -171,7 +172,13 @@ func TestBicepToSchema(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
-			require.JSONEq(t, tc.want, got)
+
+			bytes, err := json.Marshal(got)
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			require.JSONEq(t, tc.want, string(bytes))
 		})
 	}
 }

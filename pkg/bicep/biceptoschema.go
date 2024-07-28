@@ -29,7 +29,7 @@ type bicepParamMetadata struct {
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
-func BicepToSchema(templatePath string) (string, error) {
+func BicepToSchema(templatePath string) (*schema.Schema, error) {
 	// using the github.com/Checkmarx/kics parser since he already did the heavy lifting to parse a bicep template
 	parser := bp.Parser{}
 
@@ -40,7 +40,7 @@ func BicepToSchema(templatePath string) (string, error) {
 
 	doc, _, err := parser.Parse(templatePath, nil)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	for name, value := range doc[0]["parameters"].(map[string]interface{}) {
@@ -49,11 +49,11 @@ func BicepToSchema(templatePath string) (string, error) {
 		// marshal to json and unmarshal into custom struct to make bicep param easier to access
 		bytes, err := json.Marshal(value)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		err = json.Unmarshal(bytes, &bicepParam)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		property := new(schema.Schema)
@@ -62,7 +62,7 @@ func BicepToSchema(templatePath string) (string, error) {
 
 		err = parseBicepParam(property, bicepParam)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		params.Properties.Set(name, property)
@@ -71,12 +71,7 @@ func BicepToSchema(templatePath string) (string, error) {
 	// sorting this here just to help with testing. The order doesn't matter, but to our test suite it does.
 	slices.Sort(params.Required)
 
-	out, err := json.Marshal(params)
-	if err != nil {
-		return "", err
-	}
-
-	return string(out), nil
+	return params, nil
 }
 
 func parseBicepParam(sch *schema.Schema, bicepParam bicepParam) error {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/massdriver-cloud/airlock/docs/helpdocs"
@@ -34,6 +35,12 @@ func runBicepInput(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(schema)
+
+	bytes, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(bytes))
 	return nil
 }
