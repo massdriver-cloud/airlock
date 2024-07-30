@@ -1,6 +1,7 @@
 package helm_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/massdriver-cloud/airlock/pkg/helm"
@@ -92,7 +93,13 @@ func TestRun(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
-			require.JSONEq(t, got, tc.want)
+
+			bytes, err := json.Marshal(got)
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			require.JSONEq(t, tc.want, string(bytes))
 		})
 	}
 }

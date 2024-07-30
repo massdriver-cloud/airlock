@@ -1,7 +1,6 @@
 package helm
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -18,33 +17,28 @@ func (e *nullError) Error() string {
 	return "type is indeterminate (null)"
 }
 
-func HelmToSchema(valuesPath string) (string, error) {
+func HelmToSchema(valuesPath string) (*schema.Schema, error) {
 	valuesBytes, readErr := os.ReadFile(valuesPath)
 	if readErr != nil {
-		return "", readErr
+		return nil, readErr
 	}
 
 	valuesDocument := yaml.Node{}
 
 	unmarshalErr := yaml.Unmarshal(valuesBytes, &valuesDocument)
 	if unmarshalErr != nil {
-		return "", unmarshalErr
+		return nil, unmarshalErr
 	}
 
 	// the top level node is a document node. We need to go one layer
 	// deeper to get the actual yaml content
-	params := new(schema.Schema)
-	err := parseMapNode(params, valuesDocument.Content[0])
+	sch := new(schema.Schema)
+	err := parseMapNode(sch, valuesDocument.Content[0])
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	bytes, err := json.MarshalIndent(params, "", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+	return sch, nil
 }
 
 func parseNameNode(schema *schema.Schema, node *yaml.Node) error {

@@ -1,7 +1,6 @@
 package terraform
 
 import (
-	"encoding/json"
 	"errors"
 
 	"github.com/hashicorp/hcl/v2"
@@ -14,33 +13,28 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TfToSchema(modulePath string) (string, error) {
+func TfToSchema(modulePath string) (*schema.Schema, error) {
 	config := print.NewConfig()
 	config.ModuleRoot = modulePath
 
 	module, err := tfd.LoadWithOptions(config)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	params := new(schema.Schema)
-	params.Properties = orderedmap.New[string, *schema.Schema]()
+	sch := new(schema.Schema)
+	sch.Properties = orderedmap.New[string, *schema.Schema]()
 
 	for _, variable := range module.Inputs {
 		variableSchema, err := variableToSchema(variable)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		params.Properties.Set(variable.Name, variableSchema)
-		params.Required = append(params.Required, variable.Name)
+		sch.Properties.Set(variable.Name, variableSchema)
+		sch.Required = append(sch.Required, variable.Name)
 	}
 
-	bytes, err := json.MarshalIndent(params, "", "  ")
-	if err != nil {
-		return "", err
-	}
-
-	return string(bytes), nil
+	return sch, nil
 }
 
 func variableToSchema(variable *tfd.Input) (*schema.Schema, error) {

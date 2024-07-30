@@ -1,6 +1,7 @@
 package terraform_test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -32,7 +33,13 @@ func TestTfToSchema(t *testing.T) {
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
-			require.JSONEq(t, got, string(want))
+
+			bytes, err := json.Marshal(got)
+			if err != nil {
+				t.Fatalf("%d, unexpected error", err)
+			}
+
+			require.JSONEq(t, string(want), string(bytes))
 		})
 	}
 }
