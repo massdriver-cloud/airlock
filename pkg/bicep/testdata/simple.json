@@ -1,0 +1,58 @@
+{
+    "required": [
+        "stringtest",
+        "integertest",
+        "numbertest",
+        "booltest",
+        "arraytest",
+        "objecttest",
+        "nestedtest"
+    ],
+    "properties": {
+        "stringtest": {
+            "type": "string"
+        },
+        "integertest": {
+            "type": "integer"
+        },
+        "numbertest": {
+            "type": "number"
+        },
+        "booltest": {
+            "type": "boolean"
+        },
+        "arraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "objecttest": {
+            "type": "object",
+            "required": ["foo"],
+            "properties": {
+                "foo": {
+                    "type": "string"
+                },
+                "bar": {
+                    "type": "integer"
+                }
+            }
+        },
+        "nestedtest": {
+            "type": "object",
+            "required": ["top"],
+            "properties": {
+                "top": {
+                    "type": "object",
+                    "required": ["nested"],
+                    "properties": {
+                        "nested": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
