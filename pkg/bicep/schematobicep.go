@@ -41,6 +41,13 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 		return err
 	}
 
+	if sch.Enum != nil {
+		err = declareAllowed(sch, buf)
+		if err != nil {
+			return err
+		}
+	}
+
 	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
 	return nil
 }
@@ -60,4 +67,22 @@ func getBicepType(schemaType string) (string, error) {
 	default:
 		return "", errors.New("unknown type: " + schemaType)
 	}
+}
+
+func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
+	enums, err := getEnums(sch.Enum)
+	if err != nil {
+		return err
+	}
+
+	buf.WriteString(fmt.Sprintf("@allowed(%s)\n", enums))
+	return nil
+}
+
+func getEnums(schemaEnums []interface{}) (string, error) {
+	enums := []string{"\n"}
+	for _, enum := range schemaEnums {
+		enums = append(enums, fmt.Sprintf("   '%s'\n", enum))
+	}
+	return fmt.Sprintf("%s", enums), nil
 }
