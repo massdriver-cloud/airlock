@@ -37,17 +37,11 @@ func SchemaToBicep(in io.Reader) ([]byte, error) {
 }
 
 func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
 	declareAllowed(sch, buf)
 	declareDescription(sch, buf)
 	declareMinValue(sch, buf)
 	declareMaxValue(sch, buf)
-
-	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
+	declareParameter(name, sch, buf)
 	return nil
 }
 
@@ -68,6 +62,16 @@ func getBicepType(schemaType string) (string, error) {
 	}
 }
 
+func declareParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error {
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
+	return nil
+}
+
 func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
 		enumbytes, err := json.MarshalIndent(sch.Enum, "", "    ")
@@ -78,7 +82,7 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 		enumstring := string(enumbytes)
 		r := strings.NewReplacer(`"`, `'`, ",", "")
 
-		buf.WriteString(fmt.Sprintf("@allowed(%s)\n", r.Replace(enumstring)))
+		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", r.Replace(enumstring)))
 	}
 
 	return nil
