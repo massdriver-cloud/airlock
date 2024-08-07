@@ -10,6 +10,27 @@ param nestedtest object
     'bar'
 ])
 param enumtest string
+@allowed([
+    1
+    2
+])
+param enumtestints int
+@allowed([
+    true
+    false
+])
+param enumtestbools bool
+@allowed([
+    [
+        'foo'
+        'bar'
+    ]
+    [
+        'baz'
+        'qux'
+    ]
+])
+param enumtestarrays array
 @description('This is a description')
 param descriptiontest string
 @allowed([
@@ -26,3 +47,4 @@ param maxvaluetest int
 @minValue(5)
 @maxValue(10)
 param minmaxvaluetest int
+param defaulttest string = 'foo'

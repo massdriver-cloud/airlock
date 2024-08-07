@@ -68,6 +68,36 @@
         "bar"
       ]
     },
+    "enumtestints": {
+      "type": "integer",
+      "enum": [
+        1,
+        2
+      ]
+    },
+    "enumtestbools": {
+      "type": "boolean",
+      "enum": [
+        true,
+        false
+      ]
+    },
+    "enumtestarrays": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "enum": [
+        [
+          "foo",
+          "bar"
+        ],
+        [
+          "baz",
+          "qux"
+        ]
+      ]
+    },
     "descriptiontest": {
       "type": "string",
       "description": "This is a description"
@@ -93,7 +123,10 @@
       "type": "integer",
       "minimum": 5,
       "maximum": 10
+    },
+    "defaulttest": {
+      "type": "string",
+      "default": "foo"
     }
   }
 }
-

@@ -42,6 +42,7 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	declareMinValue(sch, buf)
 	declareMaxValue(sch, buf)
 	declareParameter(name, sch, buf)
+	declareDefault(sch, buf)
 	return nil
 }
 
@@ -104,4 +105,34 @@ func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Maximum != "" {
 		buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
 	}
+}
+
+func declareDefault(sch *schema.Schema, buf *bytes.Buffer) error {
+	if sch.Default != nil {
+		bicepType, err := getBicepType(sch.Type)
+		if err != nil {
+			return err
+		}
+
+		if bicepType == "string" {
+			buf.WriteString(fmt.Sprintf("= '%s'", sch.Default))
+		}
+
+		if bicepType == "int" {
+			buf.WriteString(fmt.Sprintf("= '%d'", sch.Default))
+		}
+
+		if bicepType == "bool" {
+			buf.WriteString(fmt.Sprintf("= '%t'", sch.Default))
+		}
+
+		if bicepType == "array" {
+			buf.WriteString(fmt.Sprintf("= '%v'", sch.Default))
+		}
+
+		if bicepType == "object" {
+			buf.WriteString(fmt.Sprintf("= '%v'", sch.Default))
+		}
+	}
+	return nil
 }
