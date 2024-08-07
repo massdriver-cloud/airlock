@@ -10,3 +10,5 @@ param nestedtest object
     'bar'
 ])
 param enumtest string
+@description('This is a description')
+param descriptiontest string

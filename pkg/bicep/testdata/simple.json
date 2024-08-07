@@ -67,6 +67,10 @@
         "foo",
         "bar"
       ]
+    },
+    "descriptiontest": {
+      "type": "string",
+      "description": "This is a description"
     }
   }
 }

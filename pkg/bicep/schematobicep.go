@@ -48,6 +48,13 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 		}
 	}
 
+	if sch.Description != "" {
+		err = getDescription(sch, buf)
+		if err != nil {
+			return err
+		}
+	}
+
 	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
 	return nil
 }
@@ -85,4 +92,9 @@ func getEnums(schemaEnums []interface{}) (string, error) {
 		enums = append(enums, fmt.Sprintf("   '%s'\n", enum))
 	}
 	return fmt.Sprintf("%s", enums), nil
+}
+
+func getDescription(sch *schema.Schema, buf *bytes.Buffer) error {
+	buf.WriteString(fmt.Sprintf("@description('%s')\n", sch.Description))
+	return nil
 }
