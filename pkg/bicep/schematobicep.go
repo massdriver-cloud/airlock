@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
@@ -41,19 +42,10 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 		return err
 	}
 
-	if sch.Enum != nil {
-		err = declareAllowed(sch, buf)
-		if err != nil {
-			return err
-		}
-	}
-
-	if sch.Description != "" {
-		err = getDescription(sch, buf)
-		if err != nil {
-			return err
-		}
-	}
+	declareAllowed(sch, buf)
+	declareDescription(sch, buf)
+	declareMinValue(sch, buf)
+	declareMaxValue(sch, buf)
 
 	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
 	return nil
@@ -77,24 +69,35 @@ func getBicepType(schemaType string) (string, error) {
 }
 
 func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
-	enums, err := getEnums(sch.Enum)
-	if err != nil {
-		return err
+	if sch.Enum != nil && len(sch.Enum) > 0 {
+		enumbytes, err := json.MarshalIndent(sch.Enum, "", "    ")
+		if err != nil {
+			return err
+		}
+
+		enumstring := string(enumbytes)
+		r := strings.NewReplacer(`"`, `'`, ",", "")
+
+		buf.WriteString(fmt.Sprintf("@allowed(%s)\n", r.Replace(enumstring)))
 	}
 
-	buf.WriteString(fmt.Sprintf("@allowed(%s)\n", enums))
 	return nil
 }
 
-func getEnums(schemaEnums []interface{}) (string, error) {
-	enums := []string{"\n"}
-	for _, enum := range schemaEnums {
-		enums = append(enums, fmt.Sprintf("   '%s'\n", enum))
+func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.Description != "" {
+		buf.WriteString(fmt.Sprintf("@description('%s')\n", sch.Description))
 	}
-	return fmt.Sprintf("%s", enums), nil
 }
 
-func getDescription(sch *schema.Schema, buf *bytes.Buffer) error {
-	buf.WriteString(fmt.Sprintf("@description('%s')\n", sch.Description))
-	return nil
+func declareMinValue(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.Minimum != "" {
+		buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+	}
+}
+
+func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.Maximum != "" {
+		buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
+	}
 }

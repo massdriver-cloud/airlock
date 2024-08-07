@@ -71,6 +71,28 @@
     "descriptiontest": {
       "type": "string",
       "description": "This is a description"
+    },
+    "descriptionenumtest": {
+      "type": "string",
+      "description": "This is a new description",
+      "enum": [
+        "foo",
+        "bar",
+        "baz"
+      ]
+    },
+    "minvaluetest": {
+      "type": "integer",
+      "minimum": 5
+    },
+    "maxvaluetest": {
+      "type": "integer",
+      "maximum": 10
+    },
+    "minmaxvaluetest": {
+      "type": "integer",
+      "minimum": 5,
+      "maximum": 10
     }
   }
 }
