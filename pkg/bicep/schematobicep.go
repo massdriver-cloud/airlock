@@ -41,8 +41,11 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	declareDescription(sch, buf)
 	declareMinValue(sch, buf)
 	declareMaxValue(sch, buf)
+	declareMinLength(sch, buf)
+	declareMaxLength(sch, buf)
 	declareParameter(name, sch, buf)
-	declareDefault(sch, buf)
+	// doing param defaulttest string\n= 'foo' instead
+	// of param defaulttest string = 'foo'\n
 	return nil
 }
 
@@ -69,7 +72,16 @@ func declareParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error 
 		return err
 	}
 
-	buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
+	if sch.Default != nil {
+		err = declareDefault(name, sch, buf)
+		if err != nil {
+			return err
+		}
+		return nil
+	} else {
+		buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
+	}
+
 	return nil
 }
 
@@ -107,7 +119,25 @@ func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
 	}
 }
 
-func declareDefault(sch *schema.Schema, buf *bytes.Buffer) error {
+func declareMinLength(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.MinLength != nil {
+		buf.WriteString(fmt.Sprintf("@minLength(%d)\n", sch.MinLength))
+	}
+}
+
+func declareMaxLength(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.MaxLength != nil {
+		buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", sch.MaxLength))
+	}
+}
+
+func declareSecure(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.Format == "password" {
+		buf.WriteString("@secure()\n")
+	}
+}
+
+func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
 	if sch.Default != nil {
 		bicepType, err := getBicepType(sch.Type)
 		if err != nil {
@@ -115,23 +145,23 @@ func declareDefault(sch *schema.Schema, buf *bytes.Buffer) error {
 		}
 
 		if bicepType == "string" {
-			buf.WriteString(fmt.Sprintf("= '%s'", sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = '%s'\n", name, bicepType, sch.Default))
 		}
 
 		if bicepType == "int" {
-			buf.WriteString(fmt.Sprintf("= '%d'", sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = %d\n", name, bicepType, sch.Default))
 		}
 
 		if bicepType == "bool" {
-			buf.WriteString(fmt.Sprintf("= '%t'", sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = %t\n", name, bicepType, sch.Default))
 		}
 
 		if bicepType == "array" {
-			buf.WriteString(fmt.Sprintf("= '%v'", sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
 		}
 
 		if bicepType == "object" {
-			buf.WriteString(fmt.Sprintf("= '%v'", sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
 		}
 	}
 	return nil

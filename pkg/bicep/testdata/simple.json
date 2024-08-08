@@ -124,9 +124,26 @@
       "minimum": 5,
       "maximum": 10
     },
+    "minlengthtest": {
+      "type": "string",
+      "minLength": 5
+    },
+    "maxlengthtest": {
+      "type": "string",
+      "maxLength": 10
+    },
+    "minmaxlengthtest": {
+      "type": "string",
+      "minLength": 5,
+      "maxLength": 10
+    },
     "defaulttest": {
       "type": "string",
       "default": "foo"
+    },
+    "defaultintegertest": {
+      "type": "integer",
+      "default": 5
     }
   }
 }

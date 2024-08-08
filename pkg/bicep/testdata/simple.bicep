@@ -47,4 +47,12 @@ param maxvaluetest int
 @minValue(5)
 @maxValue(10)
 param minmaxvaluetest int
+@minLength(5)
+param minlengthtest string
+@maxLength(10)
+param maxlengthtest string
+@minLength(5)
+@maxLength(10)
+param minmaxlengthtest string
 param defaulttest string = 'foo'
+param defaultintegertest int = 5
