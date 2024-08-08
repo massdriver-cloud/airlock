@@ -48,14 +48,27 @@ param maxvaluetest int
 @maxValue(10)
 param minmaxvaluetest int
 @minLength(5)
-param minlengthtest string
+param minlengthstringtest string
 @maxLength(10)
-param maxlengthtest string
+param maxlengthstringtest string
 @minLength(5)
 @maxLength(10)
-param minmaxlengthtest string
-param defaulttest string = 'foo'
+param minmaxlengthstringtest string
+@minLength(2)
+param minlengtharraytest array
+@maxLength(5)
+param maxlengtharraytest array
+@minLength(2)
+@maxLength(5)
+param minmaxlengtharraytest array
+param defaultstringtest string = 'foo'
 param defaultintegertest int = 5
 param defaultbooltest bool = true
+param defaultarraytest array = [
+    'foo'
+    'bar'
+]
 @secure()
-param securetest string
+param securestringtest string
+@secure()
+param secureobjecttest object

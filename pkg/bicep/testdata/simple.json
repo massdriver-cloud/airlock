@@ -124,20 +124,42 @@
       "minimum": 5,
       "maximum": 10
     },
-    "minlengthtest": {
+    "minlengthstringtest": {
       "type": "string",
       "minLength": 5
     },
-    "maxlengthtest": {
+    "maxlengthstringtest": {
       "type": "string",
       "maxLength": 10
     },
-    "minmaxlengthtest": {
+    "minmaxlengthstringtest": {
       "type": "string",
       "minLength": 5,
       "maxLength": 10
     },
-    "defaulttest": {
+    "minlengtharraytest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2
+    },
+    "maxlengtharraytest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5
+    },
+    "minmaxlengtharraytest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "minItems": 2,
+      "maxItems": 5
+    },
+    "defaultstringtest": {
       "type": "string",
       "default": "foo"
     },
@@ -149,8 +171,22 @@
       "type": "boolean",
       "default": true
     },
-    "securetest": {
+    "defaultarraytest": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "foo",
+        "bar"
+      ]
+    },
+    "securestringtest": {
       "type": "string",
+      "format": "password"
+    },
+    "secureobjecttest": {
+      "type": "object",
       "format": "password"
     }
   }

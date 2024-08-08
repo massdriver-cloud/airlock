@@ -119,16 +119,44 @@ func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
 	}
 }
 
-func declareMinLength(sch *schema.Schema, buf *bytes.Buffer) {
+func declareMinLength(sch *schema.Schema, buf *bytes.Buffer) error {
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	if bicepType == "array" {
+		if sch.MinItems != nil {
+			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinItems))
+		}
+		return nil
+	}
+
 	if sch.MinLength != nil {
 		buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
 	}
+
+	return nil
 }
 
-func declareMaxLength(sch *schema.Schema, buf *bytes.Buffer) {
+func declareMaxLength(sch *schema.Schema, buf *bytes.Buffer) error {
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	if bicepType == "array" {
+		if sch.MaxItems != nil {
+			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxItems))
+		}
+		return nil
+	}
+
 	if sch.MaxLength != nil {
 		buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
 	}
+
+	return nil
 }
 
 func declareSecure(sch *schema.Schema, buf *bytes.Buffer) {
@@ -144,23 +172,24 @@ func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
 			return err
 		}
 
-		if bicepType == "string" {
+		switch bicepType {
+		case "string":
 			buf.WriteString(fmt.Sprintf("param %s %s = '%s'\n", name, bicepType, sch.Default))
-		}
-
-		if bicepType == "int" {
+		case "int":
 			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
-		}
-
-		if bicepType == "bool" {
+		case "bool":
 			buf.WriteString(fmt.Sprintf("param %s %s = %t\n", name, bicepType, sch.Default))
-		}
+		case "array":
+			defBytes, err := json.MarshalIndent(sch.Default.([]interface{}), "", "    ")
+			if err != nil {
+				return err
+			}
 
-		if bicepType == "array" {
-			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
-		}
+			defString := string(defBytes)
+			r := strings.NewReplacer(`"`, `'`, ",", "")
 
-		if bicepType == "object" {
+			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, r.Replace(defString)))
+		case "object":
 			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
 		}
 	}
