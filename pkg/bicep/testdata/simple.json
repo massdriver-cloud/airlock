@@ -184,20 +184,20 @@
     "defaultobjecttest": {
       "type": "object",
       "required": [
-        "foo",
-        "bar"
+        "bar",
+        "foo"
       ],
       "properties": {
-        "foo": {
+        "bar": {
           "type": "string"
         },
-        "bar": {
+        "foo": {
           "type": "integer"
         }
       },
       "default": {
-        "foo": "baz",
-        "bar": 5
+        "bar": "baz",
+        "foo": 5
       }
     },
     "securestringtest": {

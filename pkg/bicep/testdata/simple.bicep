@@ -69,8 +69,8 @@ param defaultarraytest array = [
     'bar'
 ]
 param defaultobjecttest object = {
-    foo: 'baz'
-    bar: 5
+    bar: 'baz'
+    foo: 5
 }
 @secure()
 param securestringtest string
