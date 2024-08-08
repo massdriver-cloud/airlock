@@ -35,7 +35,7 @@ func TestSchemaToBicep(t *testing.T) {
 			}
 
 			if string(got) != string(want) {
-				t.Fatalf("got %q want %q", string(got), string(want))
+				t.Fatalf("\ngot: %q\n want: %q", string(got), string(want))
 			}
 		})
 	}
