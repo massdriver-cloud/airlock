@@ -218,19 +218,19 @@ func declareDefaultObject(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	}
 
 	r := strings.NewReplacer(`"`, `'`, ",", "")
-	defString := string(defBytes)
-	newDefString := r.Replace(defString)
+	byteToStr := string(defBytes)
+	cleanString := r.Replace(byteToStr)
 
-	splitBytes := strings.Split(newDefString, " ")
-	joinBytes := []string{}
-	for _, d := range splitBytes {
+	splitString := strings.Split(cleanString, " ")
+	joinList := []string{}
+	for _, d := range splitString {
 		if strings.Contains(d, ":") {
 			d = strings.ReplaceAll(d, `'`, "")
 		}
-		joinBytes = append(joinBytes, d)
+		joinList = append(joinList, d)
 	}
-	joinedString := strings.Join(joinBytes, " ")
+	bicepObj := strings.Join(joinList, " ")
 
-	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, joinedString))
+	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, bicepObj))
 	return nil
 }
