@@ -102,7 +102,7 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 
 func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Description != "" {
-		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description"
+		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description" https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#decorators
 		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
 	}
 }
@@ -180,18 +180,28 @@ func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
 		case "bool":
 			buf.WriteString(fmt.Sprintf("param %s %s = %t\n", name, bicepType, sch.Default))
 		case "array":
-			defBytes, err := json.MarshalIndent(sch.Default.([]interface{}), "", "    ")
-			if err != nil {
-				return err
-			}
-
-			defString := string(defBytes)
-			r := strings.NewReplacer(`"`, `'`, ",", "")
-
-			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, r.Replace(defString)))
+			declareDefaultArray(name, sch, buf)
 		case "object":
 			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
 		}
 	}
+	return nil
+}
+
+func declareDefaultArray(name string, sch *schema.Schema, buf *bytes.Buffer) error {
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	defBytes, err := json.MarshalIndent(sch.Default.([]interface{}), "", "    ")
+	if err != nil {
+		return err
+	}
+
+	defString := string(defBytes)
+	r := strings.NewReplacer(`"`, `'`, ",", "")
+
+	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, r.Replace(defString)))
 	return nil
 }
