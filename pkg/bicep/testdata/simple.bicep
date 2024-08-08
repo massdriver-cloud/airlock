@@ -31,6 +31,15 @@ param enumtestbools bool
     ]
 ])
 param enumtestarrays array
+@allowed([
+    {
+        foo: 'bar'
+    }
+    {
+        baz: 'qux'
+    }
+])
+param enumobjecttest object
 @sys.description('This is a description')
 param descriptiontest string
 @allowed([

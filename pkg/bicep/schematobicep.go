@@ -86,15 +86,34 @@ func declareParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error 
 
 func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		enumbytes, err := json.MarshalIndent(sch.Enum, "", "    ")
+		bicepType, err := getBicepType(sch.Type)
 		if err != nil {
 			return err
 		}
 
-		enumstring := string(enumbytes)
-		r := strings.NewReplacer(`"`, `'`, ",", "")
+		enumBytes, err := json.MarshalIndent(sch.Enum, "", "    ")
+		if err != nil {
+			return err
+		}
 
-		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", r.Replace(enumstring)))
+		enumString := string(enumBytes)
+		r := strings.NewReplacer(`"`, `'`, ",", "")
+		cleanString := r.Replace(enumString)
+
+		if bicepType == "object" {
+			splitString := strings.Split(cleanString, " ")
+			joinList := []string{}
+			for _, d := range splitString {
+				if strings.Contains(d, ":") {
+					d = strings.ReplaceAll(d, `'`, "")
+				}
+				joinList = append(joinList, d)
+			}
+			bicepObj := strings.Join(joinList, " ")
+			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", bicepObj))
+		} else {
+			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", cleanString))
+		}
 	}
 
 	return nil

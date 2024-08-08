@@ -98,6 +98,17 @@
         ]
       ]
     },
+    "enumobjecttest": {
+      "type": "object",
+      "enum": [
+        {
+          "foo": "bar"
+        },
+        {
+          "baz": "qux"
+        }
+      ]
+    },
     "descriptiontest": {
       "type": "string",
       "description": "This is a description"
