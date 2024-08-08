@@ -31,14 +31,14 @@ param enumtestbools bool
     ]
 ])
 param enumtestarrays array
-@description('This is a description')
+@sys.description('This is a description')
 param descriptiontest string
 @allowed([
     'foo'
     'bar'
     'baz'
 ])
-@description('This is a new description')
+@sys.description('This is a new description')
 param descriptionenumtest string
 @minValue(5)
 param minvaluetest int
@@ -56,3 +56,4 @@ param maxlengthtest string
 param minmaxlengthtest string
 param defaulttest string = 'foo'
 param defaultintegertest int = 5
+param defaultbooltest bool = true

@@ -101,9 +101,10 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 	return nil
 }
 
+// decorators are in sys namespace. to avoid potential collision with other parameters named "description"
 func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Description != "" {
-		buf.WriteString(fmt.Sprintf("@description('%s')\n", sch.Description))
+		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
 	}
 }
 
@@ -149,7 +150,7 @@ func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
 		}
 
 		if bicepType == "int" {
-			buf.WriteString(fmt.Sprintf("param %s %s = %d\n", name, bicepType, sch.Default))
+			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
 		}
 
 		if bicepType == "bool" {

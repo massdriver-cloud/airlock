@@ -144,6 +144,10 @@
     "defaultintegertest": {
       "type": "integer",
       "default": 5
+    },
+    "defaultbooltest": {
+      "type": "boolean",
+      "default": true
     }
   }
 }
