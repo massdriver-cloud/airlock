@@ -43,6 +43,7 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	declareMaxValue(sch, buf)
 	declareMinLength(sch, buf)
 	declareMaxLength(sch, buf)
+	declareSecure(sch, buf)
 	declareParameter(name, sch, buf)
 	return nil
 }
@@ -120,13 +121,13 @@ func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
 
 func declareMinLength(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.MinLength != nil {
-		buf.WriteString(fmt.Sprintf("@minLength(%d)\n", sch.MinLength))
+		buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
 	}
 }
 
 func declareMaxLength(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.MaxLength != nil {
-		buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", sch.MaxLength))
+		buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
 	}
 }
 

@@ -148,6 +148,10 @@
     "defaultbooltest": {
       "type": "boolean",
       "default": true
+    },
+    "securetest": {
+      "type": "string",
+      "format": "password"
     }
   }
 }

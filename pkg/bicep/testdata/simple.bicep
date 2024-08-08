@@ -57,3 +57,5 @@ param minmaxlengthtest string
 param defaulttest string = 'foo'
 param defaultintegertest int = 5
 param defaultbooltest bool = true
+@secure()
+param securetest string
