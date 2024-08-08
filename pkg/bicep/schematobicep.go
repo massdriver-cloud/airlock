@@ -101,22 +101,26 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 		cleanString := r.Replace(enumString)
 
 		if bicepType == "object" {
-			splitString := strings.Split(cleanString, " ")
-			joinList := []string{}
-			for _, d := range splitString {
-				if strings.Contains(d, ":") {
-					d = strings.ReplaceAll(d, `'`, "")
-				}
-				joinList = append(joinList, d)
-			}
-			bicepObj := strings.Join(joinList, " ")
-			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", bicepObj))
+			declareAllowedObject(cleanString, sch, buf)
 		} else {
 			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", cleanString))
 		}
 	}
 
 	return nil
+}
+
+func declareAllowedObject(str string, sch *schema.Schema, buf *bytes.Buffer) {
+	splitString := strings.Split(str, " ")
+	joinList := []string{}
+	for _, d := range splitString {
+		if strings.Contains(d, ":") {
+			d = strings.ReplaceAll(d, `'`, "")
+		}
+		joinList = append(joinList, d)
+	}
+	bicepObj := strings.Join(joinList, " ")
+	buf.WriteString(fmt.Sprintf("@allowed(%v)\n", bicepObj))
 }
 
 func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
