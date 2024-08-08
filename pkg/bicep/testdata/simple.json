@@ -181,6 +181,25 @@
         "bar"
       ]
     },
+    "defaultobjecttest": {
+      "type": "object",
+      "required": [
+        "foo",
+        "bar"
+      ],
+      "properties": {
+        "foo": {
+          "type": "string"
+        },
+        "bar": {
+          "type": "integer"
+        }
+      },
+      "default": {
+        "foo": "baz",
+        "bar": 5
+      }
+    },
     "securestringtest": {
       "type": "string",
       "format": "password"

@@ -182,7 +182,7 @@ func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
 		case "array":
 			declareDefaultArray(name, sch, buf)
 		case "object":
-			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
+			declareDefaultObject(name, sch, buf)
 		}
 	}
 	return nil
@@ -203,5 +203,34 @@ func declareDefaultArray(name string, sch *schema.Schema, buf *bytes.Buffer) err
 	r := strings.NewReplacer(`"`, `'`, ",", "")
 
 	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, r.Replace(defString)))
+	return nil
+}
+
+func declareDefaultObject(name string, sch *schema.Schema, buf *bytes.Buffer) error {
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	defBytes, err := json.MarshalIndent(sch.Default, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	r := strings.NewReplacer(`"`, `'`, ",", "")
+	defString := string(defBytes)
+	newDefString := r.Replace(defString)
+
+	splitBytes := strings.Split(newDefString, " ")
+	joinBytes := []string{}
+	for _, d := range splitBytes {
+		if strings.Contains(d, ":") {
+			d = strings.ReplaceAll(d, `'`, "")
+		}
+		joinBytes = append(joinBytes, d)
+	}
+	joinedString := strings.Join(joinBytes, " ")
+
+	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, joinedString))
 	return nil
 }
