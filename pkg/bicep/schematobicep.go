@@ -44,8 +44,6 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	declareMinLength(sch, buf)
 	declareMaxLength(sch, buf)
 	declareParameter(name, sch, buf)
-	// doing param defaulttest string\n= 'foo' instead
-	// of param defaulttest string = 'foo'\n
 	return nil
 }
 
