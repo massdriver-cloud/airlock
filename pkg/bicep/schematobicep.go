@@ -99,9 +99,9 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 	return nil
 }
 
-// decorators are in sys namespace. to avoid potential collision with other parameters named "description"
 func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Description != "" {
+		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description"
 		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
 	}
 }
