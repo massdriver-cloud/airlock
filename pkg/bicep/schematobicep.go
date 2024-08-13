@@ -42,13 +42,14 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 		return err
 	}
 
-	writeParamDescription(sch, buf)
-	writeParamMinValue(sch, buf, bicepType)
-	writeParamMaxValue(sch, buf, bicepType)
-	writeParamMinLength(sch, buf, bicepType)
-	writeParamMaxLength(sch, buf, bicepType)
-	writeSecureParam(sch, buf, bicepType)
-	writeBicepParameter(name, sch, buf, bicepType)
+	writeAllowedParams(sch, buf, bicepType)
+	writeDescription(sch, buf)
+	writeMinValue(sch, buf, bicepType)
+	writeMaxValue(sch, buf, bicepType)
+	writeMinLength(sch, buf, bicepType)
+	writeMaxLength(sch, buf, bicepType)
+	writeSecure(sch, buf, bicepType)
+	writeBicepParam(name, sch, buf, bicepType)
 	return nil
 }
 
@@ -69,106 +70,22 @@ func getBicepType(schemaType string) (string, error) {
 	}
 }
 
-func writeBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	defaultVal := writeDefaultParam(name, sch, buf, bicepType)
-	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defaultVal))
-}
-
-func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
-	if sch.Enum != nil && len(sch.Enum) > 0 {
-		enumBytes, err := json.MarshalIndent(sch.Enum, "", "    ")
-		if err != nil {
-			return err
-		}
-
-		enumString := string(enumBytes)
-		r := strings.NewReplacer(`"`, `'`, ",", "")
-		cleanString := r.Replace(enumString)
-
-		if bicepType == "object" {
-			parseParamObject(cleanString, sch, buf, bicepType)
-			// add recursive call here
-		} else {
-			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", cleanString))
-		}
-	}
-
-	return nil
-}
-
-func writeParamDescription(sch *schema.Schema, buf *bytes.Buffer) {
-	if sch.Description != "" {
-		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description" https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#decorators
-		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
-	}
-}
-
-func writeParamMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	if bicepType == "int" {
-		if sch.Minimum != "" {
-			buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
-		}
-	}
-}
-
-func writeParamMaxValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	if bicepType == "int" {
-		if sch.Maximum != "" {
-			buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
-		}
-	}
-}
-
-func writeParamMinLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+func renderBicep(val interface{}, bicepType string) string {
 	switch bicepType {
-	case "array":
-		if sch.MinItems != nil {
-			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinItems))
-		}
 	case "string":
-		if sch.MinLength != nil {
-			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
-		}
-	}
-}
-
-func writeParamMaxLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	switch bicepType {
+		return fmt.Sprintf("'%v'", val)
+	case "int", "bool":
+		return fmt.Sprintf("%v", val)
 	case "array":
-		if sch.MaxItems != nil {
-			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxItems))
-		}
-	case "string":
-		if sch.MaxLength != nil {
-			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
-		}
-	}
-}
-
-func writeSecureParam(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	if (bicepType == "string" || bicepType == "object") && sch.Format == "password" {
-		buf.WriteString("@secure()\n")
-	}
-}
-
-func writeDefaultParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) string {
-	if sch.Default != nil {
-		switch bicepType {
-		case "string":
-			return fmt.Sprintf(" = '%v'", sch.Default)
-		case "int", "bool":
-			return fmt.Sprintf(" = %v", sch.Default)
-		case "array":
-			parseParamArray(name, sch, buf, bicepType)
-		case "object":
-			parseParamObject(name, sch, buf, bicepType)
-		}
+		parseParamArray(val.([]interface{}))
+	case "object":
+		parseParamObject(val)
 	}
 	return ""
 }
 
-func parseParamArray(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) (string, error) {
-	defBytes, err := json.MarshalIndent(sch.Default.([]interface{}), "", "    ")
+func parseParamArray(arr []interface{}) (string, error) {
+	defBytes, err := json.MarshalIndent(arr, "", "  ")
 	if err != nil {
 		return "", err
 	}
@@ -177,12 +94,14 @@ func parseParamArray(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 	r := strings.NewReplacer(`"`, `'`, ",", "")
 
 	// array of objects result?
+	// call converValueToBicep?
+	// handle new line, commas, etc. for arrays
 
 	return fmt.Sprintf("%v", r.Replace(defString)), nil
 }
 
-func parseParamObject(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) (string, error) {
-	defBytes, err := json.MarshalIndent(sch.Default, "", "    ")
+func parseParamObject(obj interface{}) (string, error) {
+	defBytes, err := json.MarshalIndent(obj, "", "    ")
 	if err != nil {
 		return "", err
 	}
@@ -195,7 +114,7 @@ func parseParamObject(name string, sch *schema.Schema, buf *bytes.Buffer, bicepT
 	splitString := strings.Split(cleanString, " ")
 	joinList := []string{}
 	for _, d := range splitString {
-		// explain this
+		// come back to this, need to find library maybe?
 		if strings.Contains(d, ":") {
 			d = strings.ReplaceAll(d, `'`, "")
 		}
@@ -204,6 +123,86 @@ func parseParamObject(name string, sch *schema.Schema, buf *bytes.Buffer, bicepT
 	bicepObj := strings.Join(joinList, " ")
 
 	return fmt.Sprintf("%v", bicepObj), nil
+}
+
+func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	defVal := ""
+	if sch.Default != nil {
+		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default, bicepType))
+	}
+	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defVal))
+}
+
+func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
+	if sch.Enum != nil && len(sch.Enum) > 0 {
+		// if bicepType == "object" {
+		// 	parseParamObject(sch.Enum, buf)
+		// 	writeAllowedParams(sch, buf, bicepType)
+		// }
+
+		parsedArray, err := parseParamArray(sch.Enum)
+		if err != nil {
+			return err
+		}
+		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", parsedArray))
+	}
+
+	return nil
+}
+
+func writeDescription(sch *schema.Schema, buf *bytes.Buffer) {
+	if sch.Description != "" {
+		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description" https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#decorators
+		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
+	}
+}
+
+func writeMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "int" {
+		if sch.Minimum != "" {
+			buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+		}
+	}
+}
+
+func writeMaxValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "int" {
+		if sch.Maximum != "" {
+			buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
+		}
+	}
+}
+
+func writeMinLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	switch bicepType {
+	case "array":
+		if sch.MinItems != nil {
+			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinItems))
+		}
+	case "string":
+		if sch.MinLength != nil {
+			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
+		}
+	}
+}
+
+func writeMaxLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	switch bicepType {
+	case "array":
+		if sch.MaxItems != nil {
+			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxItems))
+		}
+	case "string":
+		if sch.MaxLength != nil {
+			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
+		}
+	}
+}
+
+func writeSecure(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "string" && sch.Format == "password" {
+		buf.WriteString("@secure()\n")
+	}
 }
 
 // func object2(str string, sch *schema.Schema, buf *bytes.Buffer) string {
