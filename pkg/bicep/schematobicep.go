@@ -42,8 +42,8 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 		return err
 	}
 
-	writeAllowedParams(sch, buf, bicepType)
 	writeDescription(sch, buf)
+	writeAllowedParams(sch, buf, bicepType)
 	writeMinValue(sch, buf, bicepType)
 	writeMaxValue(sch, buf, bicepType)
 	writeMinLength(sch, buf, bicepType)
@@ -77,14 +77,14 @@ func renderBicep(val interface{}, bicepType string) string {
 	case "int", "bool":
 		return fmt.Sprintf("%v", val)
 	case "array":
-		parseParamArray(val.([]interface{}))
+		parseArray(val.([]interface{}))
 	case "object":
-		parseParamObject(val)
+		parseObject(val)
 	}
 	return ""
 }
 
-func parseParamArray(arr []interface{}) (string, error) {
+func parseArray(arr []interface{}) (string, error) {
 	defBytes, err := json.MarshalIndent(arr, "", "  ")
 	if err != nil {
 		return "", err
@@ -100,7 +100,7 @@ func parseParamArray(arr []interface{}) (string, error) {
 	return fmt.Sprintf("%v", r.Replace(defString)), nil
 }
 
-func parseParamObject(obj interface{}) (string, error) {
+func parseObject(obj interface{}) (string, error) {
 	defBytes, err := json.MarshalIndent(obj, "", "    ")
 	if err != nil {
 		return "", err
@@ -135,14 +135,13 @@ func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 
 func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		// if bicepType == "object" {
-		// 	parseParamObject(sch.Enum, buf)
-		// 	writeAllowedParams(sch, buf, bicepType)
-		// }
-
-		parsedArray, err := parseParamArray(sch.Enum)
+		parsedArray, err := parseArray(sch.Enum)
 		if err != nil {
 			return err
+		}
+
+		if bicepType == "object" {
+			obj := renderBicep(sch.Enum, bicepType)
 		}
 		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", parsedArray))
 	}
@@ -204,18 +203,3 @@ func writeSecure(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 		buf.WriteString("@secure()\n")
 	}
 }
-
-// func object2(str string, sch *schema.Schema, buf *bytes.Buffer) string {
-// 	// different than declareDefaultObject?
-// 	// find library?
-// 	splitString := strings.Split(str, " ")
-// 	joinList := []string{}
-// 	for _, d := range splitString {
-// 		if strings.Contains(d, ":") {
-// 			d = strings.ReplaceAll(d, `'`, "")
-// 		}
-// 		joinList = append(joinList, d)
-// 	}
-// 	bicepObj := strings.Join(joinList, " ")
-// 	return fmt.Sprintf("@allowed(%v)\n", bicepObj)
-// }

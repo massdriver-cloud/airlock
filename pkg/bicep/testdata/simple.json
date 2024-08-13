@@ -102,12 +102,10 @@
       "type": "object",
       "enum": [
         {
-          "foo": "bar",
-          "type": "string"
+          "foo": "bar"
         },
         {
-          "baz": "qux",
-          "type": "string"
+          "baz": "qux"
         }
       ]
     },
