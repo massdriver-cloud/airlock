@@ -37,14 +37,18 @@ func SchemaToBicep(in io.Reader) ([]byte, error) {
 }
 
 func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	declareAllowed(sch, buf)
-	declareDescription(sch, buf)
-	declareMinValue(sch, buf)
-	declareMaxValue(sch, buf)
-	declareMinLength(sch, buf)
-	declareMaxLength(sch, buf)
-	declareSecure(sch, buf)
-	declareParameter(name, sch, buf)
+	bicepType, err := getBicepType(sch.Type)
+	if err != nil {
+		return err
+	}
+
+	writeParamDescription(sch, buf)
+	writeParamMinValue(sch, buf, bicepType)
+	writeParamMaxValue(sch, buf, bicepType)
+	writeParamMinLength(sch, buf, bicepType)
+	writeParamMaxLength(sch, buf, bicepType)
+	writeSecureParam(sch, buf, bicepType)
+	writeBicepParameter(name, sch, buf, bicepType)
 	return nil
 }
 
@@ -65,32 +69,13 @@ func getBicepType(schemaType string) (string, error) {
 	}
 }
 
-func declareParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
-	if sch.Default != nil {
-		err = declareDefault(name, sch, buf)
-		if err != nil {
-			return err
-		}
-		return nil
-	} else {
-		buf.WriteString(fmt.Sprintf("param %s %s\n", name, bicepType))
-	}
-
-	return nil
+func writeBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	defaultVal := writeDefaultParam(name, sch, buf, bicepType)
+	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defaultVal))
 }
 
-func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
+func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		bicepType, err := getBicepType(sch.Type)
-		if err != nil {
-			return err
-		}
-
 		enumBytes, err := json.MarshalIndent(sch.Enum, "", "    ")
 		if err != nil {
 			return err
@@ -101,7 +86,8 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 		cleanString := r.Replace(enumString)
 
 		if bicepType == "object" {
-			declareAllowedObject(cleanString, sch, buf)
+			parseParamObject(cleanString, sch, buf, bicepType)
+			// add recursive call here
 		} else {
 			buf.WriteString(fmt.Sprintf("@allowed(%v)\n", cleanString))
 		}
@@ -110,143 +96,106 @@ func declareAllowed(sch *schema.Schema, buf *bytes.Buffer) error {
 	return nil
 }
 
-func declareAllowedObject(str string, sch *schema.Schema, buf *bytes.Buffer) {
-	splitString := strings.Split(str, " ")
-	joinList := []string{}
-	for _, d := range splitString {
-		if strings.Contains(d, ":") {
-			d = strings.ReplaceAll(d, `'`, "")
-		}
-		joinList = append(joinList, d)
-	}
-	bicepObj := strings.Join(joinList, " ")
-	buf.WriteString(fmt.Sprintf("@allowed(%v)\n", bicepObj))
-}
-
-func declareDescription(sch *schema.Schema, buf *bytes.Buffer) {
+func writeParamDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Description != "" {
 		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description" https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#decorators
 		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
 	}
 }
 
-func declareMinValue(sch *schema.Schema, buf *bytes.Buffer) {
-	if sch.Minimum != "" {
-		buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+func writeParamMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "int" {
+		if sch.Minimum != "" {
+			buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+		}
 	}
 }
 
-func declareMaxValue(sch *schema.Schema, buf *bytes.Buffer) {
-	if sch.Maximum != "" {
-		buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
+func writeParamMaxValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "int" {
+		if sch.Maximum != "" {
+			buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
+		}
 	}
 }
 
-func declareMinLength(sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
-	if bicepType == "array" {
+func writeParamMinLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	switch bicepType {
+	case "array":
 		if sch.MinItems != nil {
 			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinItems))
 		}
-		return nil
+	case "string":
+		if sch.MinLength != nil {
+			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
+		}
 	}
-
-	if sch.MinLength != nil {
-		buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
-	}
-
-	return nil
 }
 
-func declareMaxLength(sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
-	if bicepType == "array" {
+func writeParamMaxLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	switch bicepType {
+	case "array":
 		if sch.MaxItems != nil {
 			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxItems))
 		}
-		return nil
+	case "string":
+		if sch.MaxLength != nil {
+			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
+		}
 	}
-
-	if sch.MaxLength != nil {
-		buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
-	}
-
-	return nil
 }
 
-func declareSecure(sch *schema.Schema, buf *bytes.Buffer) {
-	if sch.Format == "password" {
+func writeSecureParam(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if (bicepType == "string" || bicepType == "object") && sch.Format == "password" {
 		buf.WriteString("@secure()\n")
 	}
 }
 
-func declareDefault(name string, sch *schema.Schema, buf *bytes.Buffer) error {
+func writeDefaultParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) string {
 	if sch.Default != nil {
-		bicepType, err := getBicepType(sch.Type)
-		if err != nil {
-			return err
-		}
-
 		switch bicepType {
 		case "string":
-			buf.WriteString(fmt.Sprintf("param %s %s = '%s'\n", name, bicepType, sch.Default))
-		case "int":
-			buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, sch.Default))
-		case "bool":
-			buf.WriteString(fmt.Sprintf("param %s %s = %t\n", name, bicepType, sch.Default))
+			return fmt.Sprintf(" = '%v'", sch.Default)
+		case "int", "bool":
+			return fmt.Sprintf(" = %v", sch.Default)
 		case "array":
-			declareDefaultArray(name, sch, buf)
+			parseParamArray(name, sch, buf, bicepType)
 		case "object":
-			declareDefaultObject(name, sch, buf)
+			parseParamObject(name, sch, buf, bicepType)
 		}
 	}
-	return nil
+	return ""
 }
 
-func declareDefaultArray(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
+func parseParamArray(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) (string, error) {
 	defBytes, err := json.MarshalIndent(sch.Default.([]interface{}), "", "    ")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	defString := string(defBytes)
 	r := strings.NewReplacer(`"`, `'`, ",", "")
 
-	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, r.Replace(defString)))
-	return nil
+	// array of objects result?
+
+	return fmt.Sprintf("%v", r.Replace(defString)), nil
 }
 
-func declareDefaultObject(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
-	if err != nil {
-		return err
-	}
-
+func parseParamObject(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) (string, error) {
 	defBytes, err := json.MarshalIndent(sch.Default, "", "    ")
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	r := strings.NewReplacer(`"`, `'`, ",", "")
 	byteToStr := string(defBytes)
 	cleanString := r.Replace(byteToStr)
 
+	// what if default value in object is a string that has a space?
 	splitString := strings.Split(cleanString, " ")
 	joinList := []string{}
 	for _, d := range splitString {
+		// explain this
 		if strings.Contains(d, ":") {
 			d = strings.ReplaceAll(d, `'`, "")
 		}
@@ -254,6 +203,20 @@ func declareDefaultObject(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	}
 	bicepObj := strings.Join(joinList, " ")
 
-	buf.WriteString(fmt.Sprintf("param %s %s = %v\n", name, bicepType, bicepObj))
-	return nil
+	return fmt.Sprintf("%v", bicepObj), nil
 }
+
+// func object2(str string, sch *schema.Schema, buf *bytes.Buffer) string {
+// 	// different than declareDefaultObject?
+// 	// find library?
+// 	splitString := strings.Split(str, " ")
+// 	joinList := []string{}
+// 	for _, d := range splitString {
+// 		if strings.Contains(d, ":") {
+// 			d = strings.ReplaceAll(d, `'`, "")
+// 		}
+// 		joinList = append(joinList, d)
+// 	}
+// 	bicepObj := strings.Join(joinList, " ")
+// 	return fmt.Sprintf("@allowed(%v)\n", bicepObj)
+// }
