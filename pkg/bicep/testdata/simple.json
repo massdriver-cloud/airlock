@@ -214,10 +214,6 @@
     "securestringtest": {
       "type": "string",
       "format": "password"
-    },
-    "secureobjecttest": {
-      "type": "object",
-      "format": "password"
     }
   }
 }

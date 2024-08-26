@@ -128,8 +128,19 @@ func parseObject(obj interface{}) (string, error) {
 func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	defVal := ""
 	if sch.Default != nil {
-		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default, bicepType))
+		renderedVal := renderBicep(sch.Default, bicepType)
+
+		if bicepType == "object" {
+			renderedVal, _ = parseObject(sch.Default)
+		}
+
+		if bicepType == "array" {
+			renderedVal, _ = parseArray(sch.Default.([]interface{}))
+		}
+
+		defVal = fmt.Sprintf(" = %v", renderedVal)
 	}
+
 	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defVal))
 }
 

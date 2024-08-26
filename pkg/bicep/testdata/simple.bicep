@@ -83,5 +83,3 @@ param defaultobjecttest object = {
 }
 @secure()
 param securestringtest string
-@secure()
-param secureobjecttest object
