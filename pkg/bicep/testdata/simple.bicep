@@ -81,5 +81,19 @@ param defaultobjecttest object = {
   bar: 'baz'
   foo: 5
 }
+param defaultspaceobjecttest object = {
+  foo: 'bar baz'
+  lorem: 'ipsum'
+}
+param defaultarrayobjecttest array = [
+  {
+    bar: 'baz'
+    foo: 5
+  }
+  {
+    bar: 'qux'
+    foo: 10
+  }
+]
 @secure()
 param securestringtest string

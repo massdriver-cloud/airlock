@@ -93,7 +93,6 @@ func parseArray(arr []interface{}) (string, error) {
 	defString := string(defBytes)
 	r := strings.NewReplacer(`"`, `'`, ",", "")
 
-	// array of objects result?
 	// call converValueToBicep?
 	// handle new line, commas, etc. for arrays
 
@@ -110,7 +109,6 @@ func parseObject(obj interface{}) (string, error) {
 	byteToStr := string(defBytes)
 	cleanString := r.Replace(byteToStr)
 
-	// what if default value in object is a string that has a space?
 	splitString := strings.Split(cleanString, " ")
 	joinList := []string{}
 	for _, d := range splitString {

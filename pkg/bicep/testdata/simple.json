@@ -211,6 +211,53 @@
         "foo": 5
       }
     },
+    "defaultspaceobjecttest": {
+      "type": "object",
+      "required": [
+        "foo",
+        "lorem"
+      ],
+      "properties": {
+        "foo": {
+          "type": "string"
+        },
+        "lorem": {
+          "type": "string"
+        }
+      },
+      "default": {
+        "foo": "bar baz",
+        "lorem": "ipsum"
+      }
+    },
+    "defaultarrayobjecttest": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "bar",
+          "foo"
+        ],
+        "properties": {
+          "bar": {
+            "type": "string"
+          },
+          "foo": {
+            "type": "integer"
+          }
+        }
+      },
+      "default": [
+        {
+          "bar": "baz",
+          "foo": 5
+        },
+        {
+          "bar": "qux",
+          "foo": 10
+        }
+      ]
+    },
     "securestringtest": {
       "type": "string",
       "format": "password"
