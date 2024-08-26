@@ -42,12 +42,12 @@ param enumtestarrays array
 param enumobjecttest object
 @sys.description('This is a description')
 param descriptiontest string
+@sys.description('This is a new description')
 @allowed([
   'foo'
   'bar'
   'baz'
 ])
-@sys.description('This is a new description')
 param descriptionenumtest string
 @minValue(5)
 param minvaluetest int

@@ -101,7 +101,7 @@ func parseArray(arr []interface{}) (string, error) {
 }
 
 func parseObject(obj interface{}) (string, error) {
-	defBytes, err := json.MarshalIndent(obj, "", "    ")
+	defBytes, err := json.MarshalIndent(obj, "", "  ")
 	if err != nil {
 		return "", err
 	}
@@ -135,15 +135,18 @@ func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 
 func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		parsedArray, err := parseArray(sch.Enum)
+		parsedVal, err := parseArray(sch.Enum)
 		if err != nil {
 			return err
 		}
 
 		if bicepType == "object" {
-			obj := renderBicep(sch.Enum, bicepType)
+			parsedVal, err = parseObject(sch.Enum)
+			if err != nil {
+				return err
+			}
 		}
-		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", parsedArray))
+		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", parsedVal))
 	}
 
 	return nil
