@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"strings"
+	"reflect"
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
@@ -37,13 +37,13 @@ func SchemaToBicep(in io.Reader) ([]byte, error) {
 }
 
 func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) error {
-	bicepType, err := getBicepType(sch.Type)
+	bicepType, err := getBicepTypeFromSchema(sch.Type)
 	if err != nil {
 		return err
 	}
 
 	writeDescription(sch, buf)
-	writeAllowedParams(sch, buf, bicepType)
+	writeAllowedParams(sch, buf)
 	writeMinValue(sch, buf, bicepType)
 	writeMaxValue(sch, buf, bicepType)
 	writeMinLength(sch, buf, bicepType)
@@ -53,7 +53,7 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	return nil
 }
 
-func getBicepType(schemaType string) (string, error) {
+func getBicepTypeFromSchema(schemaType string) (string, error) {
 	switch schemaType {
 	case "string":
 		return "string", nil
@@ -70,95 +70,76 @@ func getBicepType(schemaType string) (string, error) {
 	}
 }
 
-func renderBicep(val interface{}, bicepType string) string {
-	switch bicepType {
+func getBicepTypeFromInterface(interfaceType interface{}) string {
+	switch reflect.TypeOf(interfaceType).Kind() {
+	case reflect.String:
+		return "string"
+	case reflect.Float64:
+		return "int"
+	case reflect.Bool:
+		return "bool"
+	case reflect.Map:
+		return "object"
+	case reflect.Slice:
+		return "array"
+	}
+	return ""
+}
+
+func renderBicep(val interface{}) string {
+	interfaceType := getBicepTypeFromInterface(val)
+	switch interfaceType {
 	case "string":
 		return fmt.Sprintf("'%v'", val)
 	case "int", "bool":
 		return fmt.Sprintf("%v", val)
 	case "array":
-		parseArray(val.([]interface{}))
+		return parseArray(val.([]interface{}))
 	case "object":
-		parseObject(val)
+		return parseObject(val.(map[string]interface{}))
 	}
 	return ""
 }
 
-func parseArray(arr []interface{}) (string, error) {
-	defBytes, err := json.MarshalIndent(arr, "", "  ")
-	if err != nil {
-		return "", err
+func parseArray(arr []interface{}) string {
+	parsedArr := "[\n"
+	fmt.Printf("unparsed array: %v\n", arr)
+	for _, v := range arr {
+		parsedVal := renderBicep(v)
+		// need to somehow keep track of nest level to add correct spaces, and pass down to end square bracket
+		parsedArr += fmt.Sprintf("  %v", parsedVal) + "\n"
 	}
-
-	defString := string(defBytes)
-	r := strings.NewReplacer(`"`, `'`, ",", "")
-
-	// call converValueToBicep?
-	// handle new line, commas, etc. for arrays
-
-	return fmt.Sprintf("%v", r.Replace(defString)), nil
+	parsedArr += "]"
+	fmt.Printf("parsed array: %v\n", parsedArr)
+	return parsedArr
 }
 
-func parseObject(obj interface{}) (string, error) {
-	defBytes, err := json.MarshalIndent(obj, "", "  ")
-	if err != nil {
-		return "", err
+func parseObject(obj map[string]interface{}) string {
+	fmt.Printf("unparsed obj: %v\n", obj)
+	parsedObj := "{\n"
+	for k, v := range obj {
+		parsedVal := renderBicep(v)
+		// need to somehow keep track of nest level to add correct spaces, and pass down to end curly bracket
+		parsedObj += fmt.Sprintf("  %v: %v", k, parsedVal) + "\n"
 	}
-
-	r := strings.NewReplacer(`"`, `'`, ",", "")
-	byteToStr := string(defBytes)
-	cleanString := r.Replace(byteToStr)
-
-	splitString := strings.Split(cleanString, " ")
-	joinList := []string{}
-	for _, d := range splitString {
-		// come back to this, need to find library maybe?
-		if strings.Contains(d, ":") {
-			d = strings.ReplaceAll(d, `'`, "")
-		}
-		joinList = append(joinList, d)
-	}
-	bicepObj := strings.Join(joinList, " ")
-
-	return fmt.Sprintf("%v", bicepObj), nil
+	parsedObj += "}"
+	fmt.Printf("parsed obj: %v\n", parsedObj)
+	return parsedObj
 }
 
 func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	defVal := ""
 	if sch.Default != nil {
-		renderedVal := renderBicep(sch.Default, bicepType)
-
-		if bicepType == "object" {
-			renderedVal, _ = parseObject(sch.Default)
-		}
-
-		if bicepType == "array" {
-			renderedVal, _ = parseArray(sch.Default.([]interface{}))
-		}
-
-		defVal = fmt.Sprintf(" = %v", renderedVal)
+		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default))
 	}
 
 	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defVal))
 }
 
-func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
+func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		parsedVal, err := parseArray(sch.Enum)
-		if err != nil {
-			return err
-		}
-
-		if bicepType == "object" {
-			parsedVal, err = parseObject(sch.Enum)
-			if err != nil {
-				return err
-			}
-		}
-		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", parsedVal))
+		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", renderBicep(sch.Enum)))
 	}
-
-	return nil
 }
 
 func writeDescription(sch *schema.Schema, buf *bytes.Buffer) {
