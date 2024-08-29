@@ -95,5 +95,33 @@ param defaultarrayobjecttest array = [
     foo: 10
   }
 ]
+param defaultnestedarraytest array = [
+  [
+    [
+      'foo'
+    ]
+    [
+      'bar'
+    ]
+  ]
+  [
+    [
+      'baz'
+    ]
+    [
+      'qux'
+    ]
+  ]
+]
+param defaultnestedobjecttest object = {
+  foo: {
+    bar: {
+      baz: 'qux'
+    }
+  }
+  quid: {
+    pro: 'quo'
+  }
+}
 @secure()
 param securestringtest string

@@ -258,6 +258,85 @@
         }
       ]
     },
+    "defaultnestedarraytest": {
+      "type": "array",
+      "items": {
+        "type": "array",
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "default": [
+        [
+          [
+            "foo"
+          ],
+          [
+            "bar"
+          ]
+        ],
+        [
+          [
+            "baz"
+          ],
+          [
+            "qux"
+          ]
+        ]
+      ]
+    },
+    "defaultnestedobjecttest": {
+      "type": "object",
+      "required": [
+        "foo",
+        "quid"
+      ],
+      "properties": {
+        "foo": {
+          "type": "object",
+          "required": [
+            "bar"
+          ],
+          "properties": {
+            "bar": {
+              "type": "object",
+              "required": [
+                "baz"
+              ],
+              "properties": {
+                "baz": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "quid": {
+          "type": "object",
+          "required": [
+            "pro"
+          ],
+          "properties": {
+            "pro": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "default": {
+        "foo": {
+          "bar": {
+            "baz": "qux"
+          }
+        },
+        "quid": {
+          "pro": "quo"
+        }
+      }
+    },
     "securestringtest": {
       "type": "string",
       "format": "password"

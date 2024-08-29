@@ -86,7 +86,7 @@ func getBicepTypeFromInterface(interfaceType interface{}) string {
 	return ""
 }
 
-func renderBicep(val interface{}) string {
+func renderBicep(val interface{}, prefix string) string {
 	interfaceType := getBicepTypeFromInterface(val)
 	switch interfaceType {
 	case "string":
@@ -94,35 +94,38 @@ func renderBicep(val interface{}) string {
 	case "int", "bool":
 		return fmt.Sprintf("%v", val)
 	case "array":
-		return parseArray(val.([]interface{}))
+		return parseArray(val.([]interface{}), prefix)
 	case "object":
-		return parseObject(val.(map[string]interface{}))
+		return parseObject(val.(map[string]interface{}), prefix)
 	}
 	return ""
 }
 
-func parseArray(arr []interface{}) string {
+func parseArray(arr []interface{}, prefix string) string {
 	parsedArr := "[\n"
 	fmt.Printf("unparsed array: %v\n", arr)
+	prefix += "  "
+
 	for _, v := range arr {
-		parsedVal := renderBicep(v)
-		// need to somehow keep track of nest level to add correct spaces, and pass down to end square bracket
-		parsedArr += fmt.Sprintf("  %v", parsedVal) + "\n"
+		parsedVal := renderBicep(v, prefix+"  ")
+		parsedArr += fmt.Sprintf("%s%s", prefix, parsedVal) + "\n"
 	}
-	parsedArr += "]"
+	parsedArr += fmt.Sprintf("%s]", prefix[:len(prefix)-2])
 	fmt.Printf("parsed array: %v\n", parsedArr)
 	return parsedArr
 }
 
-func parseObject(obj map[string]interface{}) string {
+func parseObject(obj map[string]interface{}, prefix string) string {
 	fmt.Printf("unparsed obj: %v\n", obj)
 	parsedObj := "{\n"
+	prefix += "  "
+
 	for k, v := range obj {
-		parsedVal := renderBicep(v)
-		// need to somehow keep track of nest level to add correct spaces, and pass down to end curly bracket
-		parsedObj += fmt.Sprintf("  %v: %v", k, parsedVal) + "\n"
+		parsedVal := renderBicep(v, prefix+"  ")
+		parsedObj += fmt.Sprintf("%s%s: %s", prefix, k, parsedVal) + "\n"
 	}
-	parsedObj += "}"
+
+	parsedObj += fmt.Sprintf("%s}", prefix[:len(prefix)-2])
 	fmt.Printf("parsed obj: %v\n", parsedObj)
 	return parsedObj
 }
@@ -130,7 +133,7 @@ func parseObject(obj map[string]interface{}) string {
 func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	defVal := ""
 	if sch.Default != nil {
-		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default))
+		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default, ""))
 	}
 
 	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defVal))
@@ -138,7 +141,7 @@ func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 
 func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Enum != nil && len(sch.Enum) > 0 {
-		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", renderBicep(sch.Enum)))
+		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", renderBicep(sch.Enum, "")))
 	}
 }
 
