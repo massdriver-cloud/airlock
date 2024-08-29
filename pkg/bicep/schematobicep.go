@@ -102,15 +102,17 @@ func renderBicep(val interface{}, prefix string) string {
 }
 
 func parseArray(arr []interface{}, prefix string) string {
-	parsedArr := "[\n"
 	fmt.Printf("unparsed array: %v\n", arr)
+	parsedArr := "[\n"
 	prefix += "  "
 
 	for _, v := range arr {
-		parsedVal := renderBicep(v, prefix+"  ")
+		parsedVal := renderBicep(v, prefix)
 		parsedArr += fmt.Sprintf("%s%s", prefix, parsedVal) + "\n"
 	}
-	parsedArr += fmt.Sprintf("%s]", prefix[:len(prefix)-2])
+
+	end := len(prefix) / 2
+	parsedArr += fmt.Sprintf("%s]", prefix[:end])
 	fmt.Printf("parsed array: %v\n", parsedArr)
 	return parsedArr
 }
@@ -121,11 +123,12 @@ func parseObject(obj map[string]interface{}, prefix string) string {
 	prefix += "  "
 
 	for k, v := range obj {
-		parsedVal := renderBicep(v, prefix+"  ")
+		parsedVal := renderBicep(v, prefix)
 		parsedObj += fmt.Sprintf("%s%s: %s", prefix, k, parsedVal) + "\n"
 	}
 
-	parsedObj += fmt.Sprintf("%s}", prefix[:len(prefix)-2])
+	end := len(prefix) / 2
+	parsedObj += fmt.Sprintf("%s}", prefix[:end])
 	fmt.Printf("parsed obj: %v\n", parsedObj)
 	return parsedObj
 }
