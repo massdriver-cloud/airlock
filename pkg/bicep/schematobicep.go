@@ -11,6 +11,8 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
 
+var indent string = "  "
+
 func SchemaToBicep(in io.Reader) ([]byte, error) {
 	inBytes, err := io.ReadAll(in)
 	if err != nil {
@@ -53,6 +55,62 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	return nil
 }
 
+func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
+	var defVal string
+
+	if sch.Default != nil {
+		renderedVal, err := renderBicep(sch.Default, "")
+		if err != nil {
+			return err
+		}
+
+		defVal = fmt.Sprintf(" = %s", renderedVal)
+	}
+
+	buf.WriteString(fmt.Sprintf("param %s %s%s\n", name, bicepType, defVal))
+	return nil
+}
+
+func renderBicep(val interface{}, prefix string) (string, error) {
+	interfaceType, err := getBicepTypeFromInterface(val)
+	if err != nil {
+		return "", err
+	}
+
+	switch interfaceType {
+	case "string":
+		return fmt.Sprintf("'%s'", val), nil
+	case "int", "bool":
+		return fmt.Sprintf("%v", val), nil
+	case "array":
+		assertedVal, asserArrErr := val.([]interface{})
+		if asserArrErr != true {
+			return "", errors.New("failed to assert array type")
+		}
+
+		parsedArr, parsArrErr := parseArray(assertedVal, prefix)
+		if parsArrErr != nil {
+			return "", parsArrErr
+		}
+
+		return parsedArr, nil
+	case "object":
+		assertedVal, asserObjErr := val.(map[string]interface{})
+		if asserObjErr != true {
+			return "", errors.New("failed to assert object type")
+		}
+
+		parsedObj, parsObjErr := parseObject(assertedVal, prefix)
+		if parsObjErr != nil {
+			return "", parsObjErr
+		}
+
+		return parsedObj, nil
+	default:
+		return "", err
+	}
+}
+
 func getBicepTypeFromSchema(schemaType string) (string, error) {
 	switch schemaType {
 	case "string":
@@ -70,75 +128,20 @@ func getBicepTypeFromSchema(schemaType string) (string, error) {
 	}
 }
 
-func getBicepTypeFromInterface(interfaceType interface{}) string {
+func getBicepTypeFromInterface(interfaceType interface{}) (string, error) {
 	switch reflect.TypeOf(interfaceType).Kind() {
 	case reflect.String:
-		return "string"
+		return "string", nil
 	case reflect.Float64:
-		return "int"
+		return "int", nil
 	case reflect.Bool:
-		return "bool"
+		return "bool", nil
 	case reflect.Map:
-		return "object"
+		return "object", nil
 	case reflect.Slice:
-		return "array"
-	}
-	return ""
-}
-
-func renderBicep(val interface{}, prefix string) string {
-	interfaceType := getBicepTypeFromInterface(val)
-	switch interfaceType {
-	case "string":
-		return fmt.Sprintf("'%v'", val)
-	case "int", "bool":
-		return fmt.Sprintf("%v", val)
-	case "array":
-		return parseArray(val.([]interface{}), prefix)
-	case "object":
-		return parseObject(val.(map[string]interface{}), prefix)
-	}
-	return ""
-}
-
-var indent string = "  "
-
-func parseArray(arr []interface{}, prefix string) string {
-	parsedArr := "[\n"
-
-	for _, v := range arr {
-		parsedVal := renderBicep(v, prefix+indent)
-		parsedArr += fmt.Sprintf("%s%s", prefix+indent, parsedVal) + "\n"
-	}
-
-	parsedArr += fmt.Sprintf("%s]", prefix)
-	return parsedArr
-}
-
-func parseObject(obj map[string]interface{}, prefix string) string {
-	parsedObj := "{\n"
-
-	for k, v := range obj {
-		parsedVal := renderBicep(v, prefix+indent)
-		parsedObj += fmt.Sprintf("%s%s: %s", prefix+indent, k, parsedVal) + "\n"
-	}
-
-	parsedObj += fmt.Sprintf("%s}", prefix)
-	return parsedObj
-}
-
-func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	defVal := ""
-	if sch.Default != nil {
-		defVal = fmt.Sprintf(" = %v", renderBicep(sch.Default, ""))
-	}
-
-	buf.WriteString(fmt.Sprintf("param %s %s%v\n", name, bicepType, defVal))
-}
-
-func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) {
-	if sch.Enum != nil && len(sch.Enum) > 0 {
-		buf.WriteString(fmt.Sprintf("@allowed(%v)\n", renderBicep(sch.Enum, "")))
+		return "array", nil
+	default:
+		return "", errors.New("unknown type: " + reflect.TypeOf(interfaceType).Kind().String())
 	}
 }
 
@@ -149,19 +152,28 @@ func writeDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	}
 }
 
-func writeMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	if bicepType == "int" {
-		if sch.Minimum != "" {
-			buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) error {
+	if sch.Enum != nil && len(sch.Enum) > 0 {
+		renderedVal, err := renderBicep(sch.Enum, "")
+		if err != nil {
+			return err
 		}
+
+		buf.WriteString(fmt.Sprintf("@allowed(%s)\n", renderedVal))
+	}
+	return nil
+}
+
+func writeMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
+	if bicepType == "int" && sch.Minimum != "" {
+		// set this to %v because sch.Minimum uses json.Number type
+		buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
 	}
 }
 
 func writeMaxValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
-	if bicepType == "int" {
-		if sch.Maximum != "" {
-			buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
-		}
+	if bicepType == "int" && sch.Maximum != "" {
+		buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
 	}
 }
 
@@ -195,4 +207,36 @@ func writeSecure(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	if bicepType == "string" && sch.Format == "password" {
 		buf.WriteString("@secure()\n")
 	}
+}
+
+func parseArray(arr []interface{}, prefix string) (string, error) {
+	parsedArr := "[\n"
+
+	for _, v := range arr {
+		renderedVal, err := renderBicep(v, prefix+indent)
+		if err != nil {
+			return "", err
+		}
+
+		parsedArr += fmt.Sprintf("%s%s", prefix+indent, renderedVal) + "\n"
+	}
+
+	parsedArr += fmt.Sprintf("%s]", prefix)
+	return parsedArr, nil
+}
+
+func parseObject(obj map[string]interface{}, prefix string) (string, error) {
+	parsedObj := "{\n"
+
+	for k, v := range obj {
+		renderedVal, err := renderBicep(v, prefix+indent)
+		if err != nil {
+			return "", err
+		}
+
+		parsedObj += fmt.Sprintf("%s%s: %s", prefix+indent, k, renderedVal) + "\n"
+	}
+
+	parsedObj += fmt.Sprintf("%s}", prefix)
+	return parsedObj, nil
 }
