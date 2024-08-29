@@ -101,35 +101,29 @@ func renderBicep(val interface{}, prefix string) string {
 	return ""
 }
 
+var indent string = "  "
+
 func parseArray(arr []interface{}, prefix string) string {
-	fmt.Printf("unparsed array: %v\n", arr)
 	parsedArr := "[\n"
-	prefix += "  "
 
 	for _, v := range arr {
-		parsedVal := renderBicep(v, prefix)
-		parsedArr += fmt.Sprintf("%s%s", prefix, parsedVal) + "\n"
+		parsedVal := renderBicep(v, prefix+indent)
+		parsedArr += fmt.Sprintf("%s%s", prefix+indent, parsedVal) + "\n"
 	}
 
-	end := len(prefix) / 2
-	parsedArr += fmt.Sprintf("%s]", prefix[:end])
-	fmt.Printf("parsed array: %v\n", parsedArr)
+	parsedArr += fmt.Sprintf("%s]", prefix)
 	return parsedArr
 }
 
 func parseObject(obj map[string]interface{}, prefix string) string {
-	fmt.Printf("unparsed obj: %v\n", obj)
 	parsedObj := "{\n"
-	prefix += "  "
 
 	for k, v := range obj {
-		parsedVal := renderBicep(v, prefix)
-		parsedObj += fmt.Sprintf("%s%s: %s", prefix, k, parsedVal) + "\n"
+		parsedVal := renderBicep(v, prefix+indent)
+		parsedObj += fmt.Sprintf("%s%s: %s", prefix+indent, k, parsedVal) + "\n"
 	}
 
-	end := len(prefix) / 2
-	parsedObj += fmt.Sprintf("%s}", prefix[:end])
-	fmt.Printf("parsed obj: %v\n", parsedObj)
+	parsedObj += fmt.Sprintf("%s}", prefix)
 	return parsedObj
 }
 
