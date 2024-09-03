@@ -85,27 +85,17 @@ func renderBicep(val interface{}, prefix string) (string, error) {
 	case "array":
 		assertedVal, asserArrErr := val.([]interface{})
 		if asserArrErr != true {
-			return "", errors.New("failed to assert array type")
+			return "", fmt.Errorf("unable to convert value into array: %v", val)
 		}
 
-		parsedArr, parsArrErr := parseArray(assertedVal, prefix)
-		if parsArrErr != nil {
-			return "", parsArrErr
-		}
-
-		return parsedArr, nil
+		return parseArray(assertedVal, prefix)
 	case "object":
 		assertedVal, asserObjErr := val.(map[string]interface{})
 		if asserObjErr != true {
-			return "", errors.New("failed to assert object type")
+			return "", fmt.Errorf("unable to convert value into object: %v", val)
 		}
 
-		parsedObj, parsObjErr := parseObject(assertedVal, prefix)
-		if parsObjErr != nil {
-			return "", parsObjErr
-		}
-
-		return parsedObj, nil
+		return parseObject(assertedVal, prefix)
 	default:
 		return "", err
 	}
