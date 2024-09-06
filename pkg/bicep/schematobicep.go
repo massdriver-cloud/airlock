@@ -45,14 +45,15 @@ func createBicepParameter(name string, sch *schema.Schema, buf *bytes.Buffer) er
 	}
 
 	writeDescription(sch, buf)
-	writeAllowedParams(sch, buf)
+	if allowParamErr := writeAllowedParams(sch, buf); allowParamErr != nil {
+		return allowParamErr
+	}
 	writeMinValue(sch, buf, bicepType)
 	writeMaxValue(sch, buf, bicepType)
 	writeMinLength(sch, buf, bicepType)
 	writeMaxLength(sch, buf, bicepType)
 	writeSecure(sch, buf, bicepType)
-	writeBicepParam(name, sch, buf, bicepType)
-	return nil
+	return writeBicepParam(name, sch, buf, bicepType)
 }
 
 func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepType string) error {
@@ -72,24 +73,21 @@ func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 }
 
 func renderBicep(val interface{}, prefix string) (string, error) {
-	interfaceType, err := getBicepTypeFromInterface(val)
-	if err != nil {
-		return "", err
-	}
-
-	switch interfaceType {
-	case "string":
+	switch reflect.TypeOf(val).Kind() {
+	case reflect.String:
 		return fmt.Sprintf("'%s'", val), nil
-	case "int", "bool":
+	case reflect.Float64:
 		return fmt.Sprintf("%v", val), nil
-	case "array":
+	case reflect.Bool:
+		return fmt.Sprintf("%v", val), nil
+	case reflect.Slice:
 		assertedVal, asserArrErr := val.([]interface{})
 		if asserArrErr != true {
 			return "", fmt.Errorf("unable to convert value into array: %v", val)
 		}
 
 		return parseArray(assertedVal, prefix)
-	case "object":
+	case reflect.Map:
 		assertedVal, asserObjErr := val.(map[string]interface{})
 		if asserObjErr != true {
 			return "", fmt.Errorf("unable to convert value into object: %v", val)
@@ -97,7 +95,7 @@ func renderBicep(val interface{}, prefix string) (string, error) {
 
 		return parseObject(assertedVal, prefix)
 	default:
-		return "", err
+		return "", errors.New("unknown type: " + reflect.TypeOf(val).Kind().String())
 	}
 }
 
@@ -115,23 +113,6 @@ func getBicepTypeFromSchema(schemaType string) (string, error) {
 		return "array", nil
 	default:
 		return "", errors.New("unknown type: " + schemaType)
-	}
-}
-
-func getBicepTypeFromInterface(interfaceType interface{}) (string, error) {
-	switch reflect.TypeOf(interfaceType).Kind() {
-	case reflect.String:
-		return "string", nil
-	case reflect.Float64:
-		return "int", nil
-	case reflect.Bool:
-		return "bool", nil
-	case reflect.Map:
-		return "object", nil
-	case reflect.Slice:
-		return "array", nil
-	default:
-		return "", errors.New("unknown type: " + reflect.TypeOf(interfaceType).Kind().String())
 	}
 }
 
