@@ -2,7 +2,7 @@
 @minLength(2)
 @maxLength(20)
 @allowed(['foo','bar'])
-param testString string = "foo"
+param testString string = 'foo'
 
 @minValue(0)
 @maxValue(10)
@@ -31,11 +31,11 @@ param testObject object = {
 
 param testArrayObject array = [
     {
-        foo: 'bar',
+        foo: 'bar'
         num: 10
-    },
+    }
     {
-        foo: 'baz',
+        foo: 'baz'
         num: 2
     }
 ]
@@ -49,5 +49,6 @@ param testSecureString string
 @secure()
 param testSecureObject object
 
-resource whatever 'foobar' = {
+resource whatever 'Microsoft.Network/virtualNetworks@2023-11-01' = {
+    name: 'myVnet'
 }
