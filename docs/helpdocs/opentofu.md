@@ -1,1 +1,1 @@
-# Translate between Terraform variables and JSON Schemas
+# Translate between OpenTofu variables and JSON Schemas
