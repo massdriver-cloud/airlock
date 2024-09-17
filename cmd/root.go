@@ -33,7 +33,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	rootCmd.AddCommand(NewCmdHelm())
-	rootCmd.AddCommand(NewCmdTerraform())
+	rootCmd.AddCommand(NewCmdOpenTofu())
 	rootCmd.AddCommand(NewCmdValidate())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)

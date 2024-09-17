@@ -1,4 +1,4 @@
-package terraform
+package opentofu
 
 import (
 	"encoding/json"
@@ -87,7 +87,7 @@ func convertArray(node *schema.Schema) hclwrite.Tokens {
 }
 
 func convertMap(node *schema.Schema) hclwrite.Tokens {
-	// terraform maps must all have the same type for the map value. Therefore there are only limited
+	// opentofu maps must all have the same type for the map value. Therefore there are only limited
 	// cases where we can interpret a map. Otherwise, we have to give up and just use type "any"
 
 	// first check: if there are any existing properties, we can't guarantee everything is the same type, so bail
