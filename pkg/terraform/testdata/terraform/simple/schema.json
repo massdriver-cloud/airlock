@@ -3,6 +3,7 @@
 		"teststring",
 		"testnumber",
 		"testbool",
+		"testemptybool",
 		"testobject",
 		"testlist",
 		"testset",
@@ -26,6 +27,12 @@
 			"title": "testbool",
 			"type": "boolean",
 			"description": "An example bool variable",
+			"default": false
+		},
+		"testemptybool": {
+			"title": "testemptybool",
+			"type": "boolean",
+			"description": "An example empty bool variable",
 			"default": false
 		},
 		"testobject": {

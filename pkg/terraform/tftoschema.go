@@ -54,6 +54,10 @@ func variableToSchema(variable *tfd.Input) (*schema.Schema, error) {
 		schema.Default = variable.Default
 	}
 
+	if variable.Default.Raw() == nil && variable.Type == "bool" {
+		schema.Default = false
+	}
+
 	return schema, nil
 }
 

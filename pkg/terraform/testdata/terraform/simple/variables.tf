@@ -16,6 +16,11 @@ variable "testbool" {
     default = false
 }
 
+variable "testemptybool" {
+    type = bool
+    description = "An example empty bool variable"
+}
+
 variable "testobject" {
   type = object({
     name    = string
