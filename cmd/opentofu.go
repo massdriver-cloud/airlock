@@ -14,7 +14,7 @@ func NewCmdOpenTofu() *cobra.Command {
 	opentofuCmd := &cobra.Command{
 		Use:     "opentofu",
 		Short:   "OpenTofu (HCL) translations",
-		Aliases: []string{"tf", "terraform"},
+		Aliases: []string{"tofu", "tf", "terraform"},
 		Long:    helpdocs.MustRender("opentofu"),
 	}
 
