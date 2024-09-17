@@ -1,11 +1,11 @@
-package terraform_test
+package opentofu_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/massdriver-cloud/airlock/pkg/terraform"
+	"github.com/massdriver-cloud/airlock/pkg/opentofu"
 )
 
 func TestSchemaToTf(t *testing.T) {
@@ -41,7 +41,7 @@ func TestSchemaToTf(t *testing.T) {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			got, err := terraform.SchemaToTf(schemaFile)
+			got, err := opentofu.SchemaToTf(schemaFile)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

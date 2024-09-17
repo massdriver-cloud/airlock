@@ -1,4 +1,4 @@
-package terraform_test
+package opentofu_test
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/massdriver-cloud/airlock/pkg/terraform"
+	"github.com/massdriver-cloud/airlock/pkg/opentofu"
 
 	"github.com/stretchr/testify/require"
 )
@@ -22,14 +22,14 @@ func TestTfToSchema(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			modulePath := filepath.Join("testdata/terraform", tc.name)
+			modulePath := filepath.Join("testdata/opentofu", tc.name)
 
-			want, err := os.ReadFile(filepath.Join("testdata/terraform", tc.name, "schema.json"))
+			want, err := os.ReadFile(filepath.Join("testdata/opentofu", tc.name, "schema.json"))
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			got, err := terraform.TfToSchema(modulePath)
+			got, err := opentofu.TfToSchema(modulePath)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
