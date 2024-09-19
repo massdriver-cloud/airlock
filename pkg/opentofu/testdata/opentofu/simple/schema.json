@@ -1,14 +1,14 @@
 {
 	"required": [
-		"teststring",
-		"testnumber",
+		"nodescription",
 		"testbool",
 		"testemptybool",
-		"testobject",
 		"testlist",
-		"testset",
 		"testmap",
-		"nodescription"
+		"testnumber",
+		"testobject",
+		"testset",
+		"teststring"
 	],
 	"properties": {
 		"teststring": {

@@ -43,7 +43,7 @@ func NewCmdOpenTofu() *cobra.Command {
 }
 
 func runOpenTofuInput(cmd *cobra.Command, args []string) error {
-	schema, err := opentofu.TfToSchema(args[0])
+	schema, err := opentofu.TofuToSchema(args[0])
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func runOpenTofuOutput(cmd *cobra.Command, args []string) error {
 		defer in.Close()
 	}
 
-	bytes, err := opentofu.SchemaToTf(in)
+	bytes, err := opentofu.SchemaToTofu(in)
 	if err != nil {
 		return err
 	}

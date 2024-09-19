@@ -2,22 +2,19 @@ package opentofu
 
 import (
 	"errors"
+	"slices"
 
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/massdriver-cloud/airlock/pkg/schema"
-	"github.com/terraform-docs/terraform-docs/print"
-	tfd "github.com/terraform-docs/terraform-docs/terraform"
+	"github.com/massdriver-cloud/terraform-config-inspect/tfconfig"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TfToSchema(modulePath string) (*schema.Schema, error) {
-	config := print.NewConfig()
-	config.ModuleRoot = modulePath
-
-	module, err := tfd.LoadWithOptions(config)
+func TofuToSchema(modulePath string) (*schema.Schema, error) {
+	module, err := tfconfig.LoadModule(modulePath)
 	if err != nil {
 		return nil, err
 	}
@@ -25,7 +22,7 @@ func TfToSchema(modulePath string) (*schema.Schema, error) {
 	sch := new(schema.Schema)
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 
-	for _, variable := range module.Inputs {
+	for _, variable := range module.Variables {
 		variableSchema, err := variableToSchema(variable)
 		if err != nil {
 			return nil, err
@@ -34,12 +31,14 @@ func TfToSchema(modulePath string) (*schema.Schema, error) {
 		sch.Required = append(sch.Required, variable.Name)
 	}
 
+	slices.Sort(sch.Required)
+
 	return sch, nil
 }
 
-func variableToSchema(variable *tfd.Input) (*schema.Schema, error) {
+func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	schema := new(schema.Schema)
-	variableType, err := variableTypeStringToCtyType(string(variable.Type))
+	variableType, err := variableTypeStringToCtyType(variable.Type)
 	if err != nil {
 		return nil, err
 	}
@@ -50,11 +49,11 @@ func variableToSchema(variable *tfd.Input) (*schema.Schema, error) {
 
 	schema.Description = string(variable.Description)
 
-	if variable.Default.Raw() != nil {
+	if variable.Default != nil {
 		schema.Default = variable.Default
 	}
 
-	if variable.Default.Raw() == nil && variable.Type == "bool" {
+	if variable.Default == nil && variable.Type == "bool" {
 		schema.Default = false
 	}
 
@@ -112,6 +111,7 @@ func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema) {
 			sch.Required = append(sch.Required, attName)
 		}
 	}
+	slices.Sort(sch.Required)
 }
 
 func hydrateMapSchema(name string, ty cty.Type, sch *schema.Schema) {
