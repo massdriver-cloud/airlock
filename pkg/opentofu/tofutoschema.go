@@ -13,7 +13,7 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TfToSchema(modulePath string) (*schema.Schema, error) {
+func TofuToSchema(modulePath string) (*schema.Schema, error) {
 	module, err := tfconfig.LoadModule(modulePath)
 	if err != nil {
 		return nil, err

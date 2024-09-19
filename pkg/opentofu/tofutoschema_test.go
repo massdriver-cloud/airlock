@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestTfToSchema(t *testing.T) {
+func TestTofuToSchema(t *testing.T) {
 	type testData struct {
 		name string
 	}
@@ -29,7 +29,7 @@ func TestTfToSchema(t *testing.T) {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			got, err := opentofu.TfToSchema(modulePath)
+			got, err := opentofu.TofuToSchema(modulePath)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}

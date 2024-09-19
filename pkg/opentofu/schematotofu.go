@@ -10,7 +10,7 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
 
-func SchemaToTf(in io.Reader) ([]byte, error) {
+func SchemaToTofu(in io.Reader) ([]byte, error) {
 	bytes, err := io.ReadAll(in)
 	if err != nil {
 		return nil, err

@@ -8,7 +8,7 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/opentofu"
 )
 
-func TestSchemaToTf(t *testing.T) {
+func TestSchemaToTofu(t *testing.T) {
 	type testData struct {
 		name string
 	}
@@ -41,7 +41,7 @@ func TestSchemaToTf(t *testing.T) {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			got, err := opentofu.SchemaToTf(schemaFile)
+			got, err := opentofu.SchemaToTofu(schemaFile)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
