@@ -38,11 +38,11 @@ func TofuToSchema(modulePath string) (*schema.Schema, error) {
 
 func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	schema := new(schema.Schema)
-	variableType, err := variableTypeStringToCtyType(variable.Type)
+	variableType, def, err := variableTypeStringToCtyType(variable.Type)
 	if err != nil {
 		return nil, err
 	}
-	err = hydrateSchemaFromNameAndType(variable.Name, variableType, schema)
+	err = hydrateSchemaFromNameAndType(variable.Name, variableType, schema, def)
 	if err != nil {
 		return nil, err
 	}
@@ -57,55 +57,85 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 		schema.Default = false
 	}
 
+	// fmt.Printf("Variable type: %v\nVariable name: %v\n", variable.Type, variable.Name)
+
 	return schema, nil
 }
 
-func variableTypeStringToCtyType(variableType string) (cty.Type, error) {
+func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defaults, error) {
 	expr, diags := hclsyntax.ParseExpression([]byte(variableType), "", hcl.Pos{Line: 1, Column: 1})
 	if len(diags) != 0 {
-		return cty.NilType, errors.New(diags.Error())
+		return cty.NilType, nil, errors.New(diags.Error())
 	}
-	ty, diags := typeexpr.TypeConstraint(expr)
+	ty, def, diags := typeexpr.TypeConstraintWithDefaults(expr)
 	if len(diags) != 0 {
-		return cty.NilType, errors.New(diags.Error())
+		return cty.NilType, nil, errors.New(diags.Error())
 	}
-	return ty, nil
+	return ty, def, nil
 }
 
-func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *schema.Schema) error {
+func hydrateSchemaFromNameAndType(name string, ty cty.Type, schema *schema.Schema, def *typeexpr.Defaults) error {
 	if ty.IsPrimitiveType() {
-		hydratePrimitiveSchema(name, ty, schema)
+		hydratePrimitiveSchema(name, ty, schema, def)
 	} else if ty.IsMapType() {
-		hydrateMapSchema(name, ty, schema)
+		hydrateMapSchema(name, ty, schema, def)
 	} else if ty.IsObjectType() {
-		hydrateObjectSchema(name, ty, schema)
+		hydrateObjectSchema(name, ty, schema, def)
 	} else if ty.IsListType() {
-		hydrateArraySchema(name, ty, schema)
+		hydrateArraySchema(name, ty, schema, def)
 	} else if ty.IsSetType() {
-		hydrateSetSchema(name, ty, schema)
+		hydrateSetSchema(name, ty, schema, def)
 	}
 	return nil
 }
 
-func hydratePrimitiveSchema(name string, ty cty.Type, schema *schema.Schema) {
+func hydratePrimitiveSchema(name string, ty cty.Type, schema *schema.Schema, def *typeexpr.Defaults) {
 	schema.Title = name
 	switch ty {
 	case cty.String:
 		schema.Type = "string"
+		if def != nil {
+			if defVal, exists := def.DefaultValues[name]; exists {
+				schema.Default = defVal.AsString()
+			}
+		}
 	case cty.Bool:
 		schema.Type = "boolean"
+		if def != nil {
+			if defVal, exists := def.DefaultValues[name]; exists {
+				if defVal.True() {
+					schema.Default = true
+				} else {
+					schema.Default = false
+				}
+			}
+		}
 	case cty.Number:
 		schema.Type = "number"
+		if def != nil {
+			if defVal, exists := def.DefaultValues[name]; exists {
+				defNum, _ := defVal.AsBigFloat().Float64()
+				schema.Default = defNum
+			}
+		}
 	}
 }
 
-func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema) {
+func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema, def *typeexpr.Defaults) {
 	sch.Title = name
 	sch.Type = "object"
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	for attName, attType := range ty.AttributeTypes() {
+		var nestDef *typeexpr.Defaults
+		if def != nil {
+			if defVal, exists := def.Children[attName]; exists {
+				nestDef = defVal
+			} else {
+				nestDef = nil
+			}
+		}
 		attributeSchema := new(schema.Schema)
-		hydrateSchemaFromNameAndType(attName, attType, attributeSchema)
+		hydrateSchemaFromNameAndType(attName, attType, attributeSchema, nestDef)
 		sch.Properties.Set(attName, attributeSchema)
 		if !ty.AttributeOptional(attName) {
 			sch.Required = append(sch.Required, attName)
@@ -114,25 +144,25 @@ func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema) {
 	slices.Sort(sch.Required)
 }
 
-func hydrateMapSchema(name string, ty cty.Type, sch *schema.Schema) {
+func hydrateMapSchema(name string, ty cty.Type, sch *schema.Schema, def *typeexpr.Defaults) {
 	sch.Title = name
 	sch.Type = "object"
 	sch.PropertyNames = &schema.Schema{
 		Pattern: "^.*$",
 	}
 	sch.AdditionalProperties = new(schema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.AdditionalProperties.(*schema.Schema))
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.AdditionalProperties.(*schema.Schema), def)
 }
 
-func hydrateArraySchema(name string, ty cty.Type, sch *schema.Schema) {
+func hydrateArraySchema(name string, ty cty.Type, sch *schema.Schema, def *typeexpr.Defaults) {
 	sch.Title = name
 	sch.Type = "array"
 	sch.Items = new(schema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items)
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items, def)
 }
 
-func hydrateSetSchema(name string, ty cty.Type, sch *schema.Schema) {
-	hydrateArraySchema(name, ty, sch)
+func hydrateSetSchema(name string, ty cty.Type, sch *schema.Schema, def *typeexpr.Defaults) {
+	hydrateArraySchema(name, ty, sch, def)
 	sch.UniqueItems = true
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items)
+	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items, def)
 }
