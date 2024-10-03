@@ -181,6 +181,8 @@ func getDefaultChildren(name string, defaults *typeexpr.Defaults) *typeexpr.Defa
 	return children
 }
 
+// if fields are missing from the default value for an object in the HCL, they are set to null
+// we want to remove these fields from the default instead of creating a null default in the schema
 func removeNullKeys(defVal interface{}) {
 	assertedDefVal, ok := defVal.(map[string]interface{})
 	if !ok {
