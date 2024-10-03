@@ -41,10 +41,29 @@ variable "testnestedobject" {
     address = optional(string, "123 Bob St.")
     age     = optional(number, 30)
     dead    = optional(bool, false)
-    phones = object({
+    phones  = optional(object({
       home = string
       work = optional(string, "123-456-7891")
+    }), {
+      home = "987-654-3210"
     })
+    children = optional(list(object({
+      name       = string
+      occupation = optional(object({
+        company    = string
+        experience = optional(number, 0)
+      }), {
+        company    = "Massdriver"
+        experience = 1
+      })
+    })), [{
+      name = "bob"
+      occupation = {
+        company    = "none",
+        experience = 2
+      }
+    }]
+    )
   })
   description = "An example nested object variable"
 }
