@@ -94,7 +94,7 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	}
 
 	if ty.IsPrimitiveType() {
-		hydratePrimitiveSchema(ty, sch)
+		hydratePrimitiveSchema(sch, ty)
 	} else if ty.IsMapType() {
 		hydrateMapSchema(sch, name, ty, defaults)
 	} else if ty.IsObjectType() {
@@ -107,7 +107,7 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	return nil
 }
 
-func hydratePrimitiveSchema(ty cty.Type, sch *schema.Schema) {
+func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
 	switch ty {
 	case cty.String:
 		sch.Type = "string"
