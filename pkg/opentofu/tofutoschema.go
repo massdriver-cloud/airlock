@@ -45,10 +45,10 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	if err != nil {
 		return nil, err
 	}
+	// To simplify the logic of recursively walking the Defaults structure in objects types,
+	// we make the extracted Defaults a Child of a dummy "top level" node
 	var topLevelDefault *typeexpr.Defaults
 	if defaults != nil {
-		// To simplify the logic of recursively walking the Defaults structure in objects types,
-		// we make the extracted Defaults a Child of a dummy "top level" node
 		topLevelDefault = new(typeexpr.Defaults)
 		topLevelDefault.Children = map[string]*typeexpr.Defaults{
 			variable.Name: defaults,
@@ -68,8 +68,6 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	if variable.Default == nil && variable.Type == "bool" {
 		schema.Default = false
 	}
-
-	// fmt.Printf("Variable type: %v\nVariable name: %v\n", variable.Type, variable.Name)
 
 	return schema, nil
 }
@@ -180,4 +178,16 @@ func getDefaultChildren(name string, defaults *typeexpr.Defaults) *typeexpr.Defa
 		}
 	}
 	return children
+}
+
+func removeNullKeys(foo map[string]interface{}) {
+	for key, value := range foo {
+		if value == nil {
+			delete(foo, key)
+			continue
+		}
+		if bar, ok := foo[key].(map[string]interface{}); ok {
+			removeNullKeys(bar)
+		}
+	}
 }
