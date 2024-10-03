@@ -113,13 +113,16 @@
         "children": {
           "title": "children",
           "type": "array",
-          "default": [{
-            "name": "bob",
-            "occupation": {
-              "company": "none",
-              "experience": 2
+          "default": [
+            {
+              "name": "bob",
+              "occupation": {
+                "company": "none",
+                "experience": 2,
+                "manager": true
+              }
             }
-          }],
+          ],
           "items": {
             "type": "object",
             "required": [
@@ -135,7 +138,8 @@
                 "type": "object",
                 "default": {
                   "company": "Massdriver",
-                  "experience": 1
+                  "experience": 1,
+                  "manager": false
                 },
                 "required": [
                   "company"
@@ -149,6 +153,11 @@
                     "title": "experience",
                     "type": "number",
                     "default": 0
+                  },
+                  "manager": {
+                    "title": "manager",
+                    "type": "boolean",
+                    "default": false
                   }
                 }
               }

@@ -54,7 +54,7 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 			variable.Name: defaults,
 		}
 	}
-	err = hydrateSchemaFromNameAndType(variable.Name, variableType, schema, topLevelDefault)
+	err = hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,7 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defau
 	return ty, def, nil
 }
 
-func hydrateSchemaFromNameAndType(name string, ty cty.Type, sch *schema.Schema, defaults *typeexpr.Defaults) error {
+func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.Title = name
 
 	if defaults != nil {
@@ -96,13 +96,13 @@ func hydrateSchemaFromNameAndType(name string, ty cty.Type, sch *schema.Schema, 
 	if ty.IsPrimitiveType() {
 		hydratePrimitiveSchema(ty, sch)
 	} else if ty.IsMapType() {
-		hydrateMapSchema(name, ty, sch, defaults)
+		hydrateMapSchema(sch, name, ty, defaults)
 	} else if ty.IsObjectType() {
-		hydrateObjectSchema(name, ty, sch, defaults)
+		hydrateObjectSchema(sch, name, ty, defaults)
 	} else if ty.IsListType() {
-		hydrateArraySchema(name, ty, sch, defaults)
+		hydrateArraySchema(sch, name, ty, defaults)
 	} else if ty.IsSetType() {
-		hydrateSetSchema(name, ty, sch, defaults)
+		hydrateSetSchema(sch, name, ty, defaults)
 	}
 	return nil
 }
@@ -118,12 +118,12 @@ func hydratePrimitiveSchema(ty cty.Type, sch *schema.Schema) {
 	}
 }
 
-func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema, defaults *typeexpr.Defaults) {
+func hydrateObjectSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
 	sch.Type = "object"
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	for attName, attType := range ty.AttributeTypes() {
 		attributeSchema := new(schema.Schema)
-		hydrateSchemaFromNameAndType(attName, attType, attributeSchema, getDefaultChildren(name, defaults))
+		hydrateSchemaFromNameTypeAndDefaults(attributeSchema, attName, attType, getDefaultChildren(name, defaults))
 		sch.Properties.Set(attName, attributeSchema)
 		if !ty.AttributeOptional(attName) {
 			sch.Required = append(sch.Required, attName)
@@ -132,25 +132,25 @@ func hydrateObjectSchema(name string, ty cty.Type, sch *schema.Schema, defaults 
 	slices.Sort(sch.Required)
 }
 
-func hydrateMapSchema(name string, ty cty.Type, sch *schema.Schema, defaults *typeexpr.Defaults) {
+func hydrateMapSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
 	sch.Type = "object"
 	sch.PropertyNames = &schema.Schema{
 		Pattern: "^.*$",
 	}
 	sch.AdditionalProperties = new(schema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.AdditionalProperties.(*schema.Schema), getDefaultChildren(name, defaults))
+	hydrateSchemaFromNameTypeAndDefaults(sch.AdditionalProperties.(*schema.Schema), "", ty.ElementType(), getDefaultChildren(name, defaults))
 }
 
-func hydrateArraySchema(name string, ty cty.Type, sch *schema.Schema, defaults *typeexpr.Defaults) {
+func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
 	sch.Type = "array"
 	sch.Items = new(schema.Schema)
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items, getDefaultChildren(name, defaults))
+	hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
 }
 
-func hydrateSetSchema(name string, ty cty.Type, sch *schema.Schema, defaults *typeexpr.Defaults) {
-	hydrateArraySchema(name, ty, sch, defaults)
+func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
+	hydrateArraySchema(sch, name, ty, defaults)
 	sch.UniqueItems = true
-	hydrateSchemaFromNameAndType("", ty.ElementType(), sch.Items, getDefaultChildren(name, defaults))
+	hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
 }
 
 func ctyValueToInterface(val cty.Value) interface{} {
@@ -167,6 +167,7 @@ func ctyValueToInterface(val cty.Value) interface{} {
 		// guaranteed valid by ctyjson.Marshal.
 		panic(fmt.Errorf("failed to re-parse default value from JSON: %s", err))
 	}
+	removeNullKeys(def)
 	return def
 }
 
@@ -180,14 +181,18 @@ func getDefaultChildren(name string, defaults *typeexpr.Defaults) *typeexpr.Defa
 	return children
 }
 
-func removeNullKeys(foo map[string]interface{}) {
-	for key, value := range foo {
+func removeNullKeys(defVal interface{}) {
+	assertedDefVal, ok := defVal.(map[string]interface{})
+	if !ok {
+		return
+	}
+	for key, value := range assertedDefVal {
 		if value == nil {
-			delete(foo, key)
+			delete(assertedDefVal, key)
 			continue
 		}
-		if bar, ok := foo[key].(map[string]interface{}); ok {
-			removeNullKeys(bar)
+		if valObj, ok := assertedDefVal[key].(map[string]interface{}); ok {
+			removeNullKeys(valObj)
 		}
 	}
 }
