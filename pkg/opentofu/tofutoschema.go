@@ -77,11 +77,11 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defau
 	if len(diags) != 0 {
 		return cty.NilType, nil, errors.New(diags.Error())
 	}
-	ty, def, diags := typeexpr.TypeConstraintWithDefaults(expr)
+	ty, defaults, diags := typeexpr.TypeConstraintWithDefaults(expr)
 	if len(diags) != 0 {
 		return cty.NilType, nil, errors.New(diags.Error())
 	}
-	return ty, def, nil
+	return ty, defaults, nil
 }
 
 func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
