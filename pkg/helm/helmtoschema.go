@@ -8,7 +8,7 @@ import (
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type nullError struct{}

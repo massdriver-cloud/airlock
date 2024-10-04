@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/hashicorp/hcl/v2"
+	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/massdriver-cloud/airlock/pkg/schema"

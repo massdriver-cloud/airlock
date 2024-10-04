@@ -82,14 +82,14 @@ func renderBicep(val interface{}, prefix string) (string, error) {
 		return fmt.Sprintf("%v", val), nil
 	case reflect.Slice:
 		assertedVal, asserArrErr := val.([]interface{})
-		if asserArrErr != true {
+		if !asserArrErr {
 			return "", fmt.Errorf("unable to convert value into array: %v", val)
 		}
 
 		return parseArray(assertedVal, prefix)
 	case reflect.Map:
 		assertedVal, asserObjErr := val.(map[string]interface{})
-		if asserObjErr != true {
+		if !asserObjErr {
 			return "", fmt.Errorf("unable to convert value into object: %v", val)
 		}
 
