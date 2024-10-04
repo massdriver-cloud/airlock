@@ -1,4 +1,5 @@
 fail_fast: false
+
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.2.0
@@ -8,9 +9,17 @@ repos:
       - id: check-json
         exclude: .devcontainer/
       - id: pretty-format-json
-        args: [--autofix, --no-sort-keys, --indent=4]
+        args:
+          - --autofix
+          - --no-sort-keys
+          - --indent=4
         exclude: .devcontainer/
+      - id: end-of-file-fixer
+        exclude: ^.*testdata/.*$
       - id: detect-aws-credentials
-        args: [--allow-missing-credentials]
+        args:
+          - --allow-missing-credentials
       - id: no-commit-to-branch
-        args: [-b, main]
+        args:
+          - -b
+          - main
