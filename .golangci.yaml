@@ -224,8 +224,8 @@ issues:
 
   exclude-rules:
     # Allow unused params at the cobra command level
-    - linters: [revive]
-      text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
+    # - linters: [revive]
+    #   text: "unused-parameter: parameter ('cmd'|'args') seems to be unused, consider removing or renaming it as _"
     - source: "^//\\s*go:generate\\s"
       linters: [lll]
     # Allow TODO for now
@@ -237,7 +237,7 @@ issues:
       linters: [errorlint]
     - path: "_test\\.go"
       linters:
-        - revive
+        # - revive
         - bodyclose
         - dupl
         - funlen
