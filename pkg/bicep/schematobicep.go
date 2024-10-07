@@ -11,7 +11,7 @@ import (
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
 
-var indent string = "  "
+var indent = "  "
 
 func SchemaToBicep(in io.Reader) ([]byte, error) {
 	inBytes, err := io.ReadAll(in)
@@ -124,7 +124,7 @@ func writeDescription(sch *schema.Schema, buf *bytes.Buffer) {
 }
 
 func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) error {
-	if sch.Enum != nil && len(sch.Enum) > 0 {
+	if len(sch.Enum) > 0 {
 		renderedVal, err := renderBicep(sch.Enum, "")
 		if err != nil {
 			return err

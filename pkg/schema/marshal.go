@@ -45,7 +45,6 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 				return err
 			}
 			s.AdditionalProperties = &addPropSchema
-
 		} else {
 			// additionalProperties is bool
 			s.AdditionalProperties = addPropBool

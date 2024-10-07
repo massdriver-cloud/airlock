@@ -15,7 +15,7 @@ repos:
           - --indent=4
         exclude: .devcontainer/
       - id: end-of-file-fixer
-        exclude: ^.*testdata/.*$
+        exclude: ^.*testdata.*
       - id: detect-aws-credentials
         args:
           - --allow-missing-credentials

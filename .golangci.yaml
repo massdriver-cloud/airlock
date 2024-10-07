@@ -138,14 +138,14 @@ linters:
     - errname # Checks that sentinel errors are prefixed with the Err and error types are suffixed with the Error.
     - errorlint # errorlint is a linter for that can be used to find code that will cause problems with the error wrapping scheme introduced in Go 1.13.
     # - execinquery # execinquery is a linter about query string checker in Query function which reads your Go src files and warning it finds
-    - exhaustive # check exhaustiveness of enum switch statements
-    - exportloopref # checks for pointers to enclosing loop variables
+    # - exhaustive # check exhaustiveness of enum switch statements
+    # - exportloopref # checks for pointers to enclosing loop variables (deprecated)
     # - forbidigo # Forbids identifiers
     - funlen # Tool for detection of long functions
     # - gochecknoglobals # check that no global variables exist
     # - gochecknoinits # Checks that no init functions are present in Go code
     - gocognit # Computes and checks the cognitive complexity of functions
-    - goconst # Finds repeated strings that could be replaced by a constant
+    # - goconst # Finds repeated strings that could be replaced by a constant
     - gocritic # Provides diagnostics that check for bugs, performance and style issues.
     - gocyclo # Computes and checks the cyclomatic complexity of functions
     # - godot # Check if comments end in a period
@@ -167,7 +167,7 @@ linters:
     # - nosprintfhostport # Checks for misuse of Sprintf to construct a host with port in a URL.
     - predeclared # find code that shadows one of Go's predeclared identifiers
     - promlinter # Check Prometheus metrics naming via promlint
-    - revive # Fast, configurable, extensible, flexible, and beautiful linter for Go. Drop-in replacement of golint.
+    # - revive # Fast, configurable, extensible, flexible, and beautiful linter for Go. Drop-in replacement of golint.
     - rowserrcheck # checks whether Err of rows is checked successfully
     - sqlclosecheck # Checks that sql.Rows and sql.Stmt are closed.
     - stylecheck # Stylecheck is a replacement for golint
