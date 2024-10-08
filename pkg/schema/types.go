@@ -11,11 +11,11 @@ import (
 type Schema struct {
 	// RFC draft-bhutton-json-schema-00
 	Version string `json:"$schema,omitempty"` // section 8.1.1
-	//ID          ID          `json:"$id,omitempty"`         // section 8.2.1
+	// ID          ID          `json:"$id,omitempty"`         // section 8.2.1
 	Anchor     string `json:"$anchor,omitempty"`     // section 8.2.2
 	Ref        string `json:"$ref,omitempty"`        // section 8.2.3.1
 	DynamicRef string `json:"$dynamicRef,omitempty"` // section 8.2.3.2
-	//Definitions Definitions `json:"$defs,omitempty"`       // section 8.2.4
+	// Definitions Definitions `json:"$defs,omitempty"`       // section 8.2.4
 	Comments string `json:"$comment,omitempty"` // section 8.3
 	// RFC draft-bhutton-json-schema-00 section 10.2.1 (Sub-schemas with logic)
 	AllOf []*Schema `json:"allOf,omitempty"` // section 10.2.1.1
@@ -32,12 +32,12 @@ type Schema struct {
 	Items       *Schema   `json:"items,omitempty"`       // section 10.3.1.2  (replaces additionalItems)
 	Contains    *Schema   `json:"contains,omitempty"`    // section 10.3.1.3
 	// RFC draft-bhutton-json-schema-00 section 10.3.2 (sub-schemas)
-	//Properties              map[string]*Schema `json:"properties,omitempty"`           // section 10.3.2.1
+	// Properties              map[string]*Schema `json:"properties,omitempty"`           // section 10.3.2.1
 	Properties              *orderedmap.OrderedMap[string, *Schema] `json:"properties,omitempty"`
 	PatternProperties       map[string]*Schema                      `json:"patternProperties,omitempty"`    // section 10.3.2.2
 	AdditionalPropertiesRaw *json.RawMessage                        `json:"additionalProperties,omitempty"` // section 10.3.2.3
 	AdditionalProperties    interface{}                             `json:"-"`
-	//AdditionalProperties *Schema `json:"additionalProperties,omitempty"` // section 10.3.2.3
+	// AdditionalProperties *Schema `json:"additionalProperties,omitempty"` // section 10.3.2.3
 	PropertyNames *Schema `json:"propertyNames,omitempty"` // section 10.3.2.4
 	// RFC draft-bhutton-json-schema-validation-00, section 6
 	Type              string              `json:"type,omitempty"`              // section 6.1.1
