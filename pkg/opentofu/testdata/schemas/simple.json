@@ -29,7 +29,9 @@
         },
         "objecttest": {
             "type": "object",
-            "required": ["foo"],
+            "required": [
+                "foo"
+            ],
             "properties": {
                 "foo": {
                     "type": "string"
@@ -41,11 +43,15 @@
         },
         "nestedtest": {
             "type": "object",
-            "required": ["top"],
+            "required": [
+                "top"
+            ],
             "properties": {
                 "top": {
                     "type": "object",
-                    "required": ["nested"],
+                    "required": [
+                        "nested"
+                    ],
                     "properties": {
                         "nested": {
                             "type": "string"

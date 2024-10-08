@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"slices"
 
-	"github.com/hashicorp/hcl/v2"
+	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/massdriver-cloud/airlock/pkg/schema"
@@ -54,12 +54,9 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 			variable.Name: defaults,
 		}
 	}
-	err = hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault)
-	if err != nil {
-		return nil, err
-	}
+	hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault)
 
-	schema.Description = string(variable.Description)
+	schema.Description = variable.Description
 
 	if variable.Default != nil {
 		schema.Default = variable.Default
@@ -84,7 +81,7 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defau
 	return ty, defaults, nil
 }
 
-func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
 	sch.Title = name
 
 	if defaults != nil {
@@ -93,6 +90,7 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 		}
 	}
 
+	//nolint:gocritic
 	if ty.IsPrimitiveType() {
 		hydratePrimitiveSchema(sch, ty)
 	} else if ty.IsMapType() {
@@ -104,7 +102,6 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	} else if ty.IsSetType() {
 		hydrateSetSchema(sch, name, ty, defaults)
 	}
-	return nil
 }
 
 func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
@@ -158,14 +155,14 @@ func ctyValueToInterface(val cty.Value) interface{} {
 	if err != nil {
 		// Should never happen, since all possible known
 		// values have a JSON mapping.
-		panic(fmt.Errorf("failed to serialize default value as JSON: %s", err))
+		panic(fmt.Errorf("failed to serialize default value as JSON: %w", err))
 	}
 	var def interface{}
 	err = json.Unmarshal(valJSON, &def)
 	if err != nil {
 		// Again should never happen, because valJSON is
 		// guaranteed valid by ctyjson.Marshal.
-		panic(fmt.Errorf("failed to re-parse default value from JSON: %s", err))
+		panic(fmt.Errorf("failed to re-parse default value from JSON: %w", err))
 	}
 	removeNullKeys(def)
 	return def
@@ -193,7 +190,7 @@ func removeNullKeys(defVal interface{}) {
 			delete(assertedDefVal, key)
 			continue
 		}
-		if valObj, ok := assertedDefVal[key].(map[string]interface{}); ok {
+		if valObj, objOk := assertedDefVal[key].(map[string]interface{}); objOk {
 			removeNullKeys(valObj)
 		}
 	}

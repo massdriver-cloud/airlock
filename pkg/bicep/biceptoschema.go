@@ -44,25 +44,25 @@ func BicepToSchema(templatePath string) (*schema.Schema, error) {
 	}
 
 	for name, value := range doc[0]["parameters"].(map[string]interface{}) {
-		bicepParam := bicepParam{}
+		param := bicepParam{}
 
 		// marshal to json and unmarshal into custom struct to make bicep param easier to access
-		bytes, err := json.Marshal(value)
-		if err != nil {
-			return nil, err
+		bytes, marshalErr := json.Marshal(value)
+		if marshalErr != nil {
+			return nil, marshalErr
 		}
-		err = json.Unmarshal(bytes, &bicepParam)
-		if err != nil {
-			return nil, err
+		unmarshalErr := json.Unmarshal(bytes, &param)
+		if unmarshalErr != nil {
+			return nil, unmarshalErr
 		}
 
 		property := new(schema.Schema)
 		property.Title = name
-		property.Description = bicepParam.Metadata.Description
+		property.Description = param.Metadata.Description
 
-		err = parseBicepParam(property, bicepParam)
-		if err != nil {
-			return nil, err
+		parseErr := parseBicepParam(property, param)
+		if parseErr != nil {
+			return nil, parseErr
 		}
 
 		params.Properties.Set(name, property)
@@ -97,8 +97,13 @@ func parseIntParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.Type = "integer"
 	sch.Default = bicepParam.DefaultValue
 
-	if bicepParam.AllowedValues != nil && len(bicepParam.AllowedValues) == 1 {
-		sch.Enum = bicepParam.AllowedValues[0].([]interface{})
+	allowedVals := bicepParam.AllowedValues
+	if len(allowedVals) == 1 {
+		assertedEnum, ok := allowedVals[0].([]interface{})
+		if !ok {
+			return fmt.Errorf("unable to cast %v to []interface{}", allowedVals)
+		}
+		sch.Enum = assertedEnum
 	}
 
 	if bicepParam.MinValue != nil {
@@ -125,8 +130,13 @@ func parseStringParam(sch *schema.Schema, bicepParam bicepParam, secure bool) er
 		sch.Format = "password"
 	}
 
-	if bicepParam.AllowedValues != nil && len(bicepParam.AllowedValues) == 1 {
-		sch.Enum = bicepParam.AllowedValues[0].([]interface{})
+	allowedVals := bicepParam.AllowedValues
+	if len(allowedVals) == 1 {
+		assertedEnum, ok := allowedVals[0].([]interface{})
+		if !ok {
+			return fmt.Errorf("unable to cast %v to []interface{}", allowedVals)
+		}
+		sch.Enum = assertedEnum
 	}
 
 	sch.MinLength = bicepParam.MinLength
@@ -142,7 +152,10 @@ func parseArrayParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.MaxItems = bicepParam.MaxLength
 
 	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.([]interface{})) != 0 {
-		parseArrayType(sch, bicepParam.DefaultValue.([]interface{}))
+		err := parseArrayType(sch, bicepParam.DefaultValue.([]interface{}))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -151,7 +164,10 @@ func parseObjectParam(sch *schema.Schema, bicepParam bicepParam) error {
 	sch.Type = "object"
 
 	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.(map[string]interface{})) > 1 {
-		parseObjectType(sch, bicepParam.DefaultValue.(map[string]interface{}))
+		err := parseObjectType(sch, bicepParam.DefaultValue.(map[string]interface{}))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -180,10 +196,16 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error 
 			property.Default = value
 		case reflect.Slice:
 			property.Type = "array"
-			parseArrayType(property, value.([]interface{}))
+			err := parseArrayType(property, value.([]interface{}))
+			if err != nil {
+				return err
+			}
 		case reflect.Map:
 			property.Type = "object"
-			parseObjectType(property, value.(map[string]interface{}))
+			err := parseObjectType(property, value.(map[string]interface{}))
+			if err != nil {
+				return err
+			}
 		default:
 			return errors.New("unknown type: " + reflect.TypeOf(value).String())
 		}
@@ -213,10 +235,16 @@ func parseArrayType(sch *schema.Schema, value []interface{}) error {
 			sch.Default = value
 		case reflect.Slice:
 			items.Type = "array"
-			parseArrayType(items, elem.([]interface{}))
+			err := parseArrayType(items, elem.([]interface{}))
+			if err != nil {
+				return err
+			}
 		case reflect.Map:
 			items.Type = "object"
-			parseObjectType(items, elem.(map[string]interface{}))
+			err := parseObjectType(items, elem.(map[string]interface{}))
+			if err != nil {
+				return err
+			}
 		default:
 			return errors.New("unknown type: " + reflect.TypeOf(elem).String())
 		}

@@ -8,7 +8,7 @@ import (
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
-	"gopkg.in/yaml.v3"
+	yaml "gopkg.in/yaml.v3"
 )
 
 type nullError struct{}
@@ -41,15 +41,13 @@ func HelmToSchema(valuesPath string) (*schema.Schema, error) {
 	return sch, nil
 }
 
-func parseNameNode(schema *schema.Schema, node *yaml.Node) error {
+func parseNameNode(schema *schema.Schema, node *yaml.Node) {
 	schema.Title = node.Value
 
 	description := strings.TrimLeft(node.HeadComment, "# \t")
 	if len(description) > 0 {
 		schema.Description = description
 	}
-
-	return nil
 }
 
 func parseValueNode(schema *schema.Schema, node *yaml.Node) error {
@@ -76,18 +74,17 @@ func parseValueNode(schema *schema.Schema, node *yaml.Node) error {
 func nodeToProperty(name, value *yaml.Node) (*schema.Schema, error) {
 	sch := new(schema.Schema)
 
-	if err := parseNameNode(sch, name); err != nil {
-		return nil, err
-	}
+	parseNameNode(sch, name)
 
 	err := parseValueNode(sch, value)
 	if err != nil {
+		//nolint:errorlint
 		if _, ok := err.(*nullError); ok {
-			fmt.Printf("Warning: Skipping field %s. Reason: %v\n", sch.Title, err)
+			fmt.Printf("warning: skipping field %s\n reason: %v\n", sch.Title, err)
+			//nolint:nilnil
 			return nil, nil
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 
 	return sch, nil

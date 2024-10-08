@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/github/license/massdriver-cloud/airlock)](https://github.com/massdriver-cloud/airlock/blob/master/LICENSE)
 
 ## Overview
-Generate JSON Schema from various sources (OpenTofu, Helm) 
+Generate JSON Schema from various sources (OpenTofu, Helm)
 
 ## Getting Started
 

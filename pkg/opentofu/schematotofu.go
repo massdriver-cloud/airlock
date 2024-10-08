@@ -113,7 +113,7 @@ func convertMap(node *schema.Schema) hclwrite.Tokens {
 	}
 
 	// if there is exactly 1 patternProperty specification (and no other dynamic is set), we can interpret as a map
-	if node.PatternProperties != nil && len(node.PatternProperties) == 1 && additionalPropertiesIsFalseOrNull {
+	if len(node.PatternProperties) == 1 && additionalPropertiesIsFalseOrNull {
 		for _, patternProp := range node.PatternProperties {
 			return hclwrite.TokensForFunctionCall("map", typeExprTokens(patternProp, false))
 		}

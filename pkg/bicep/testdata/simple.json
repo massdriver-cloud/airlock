@@ -1,345 +1,345 @@
 {
-  "required": [
-    "stringtest",
-    "integertest",
-    "numbertest",
-    "booltest",
-    "arraytest",
-    "objecttest",
-    "nestedtest",
-    "enumtest"
-  ],
-  "properties": {
-    "stringtest": {
-      "type": "string"
-    },
-    "integertest": {
-      "type": "integer"
-    },
-    "numbertest": {
-      "type": "number"
-    },
-    "booltest": {
-      "type": "boolean"
-    },
-    "arraytest": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      }
-    },
-    "objecttest": {
-      "type": "object",
-      "required": [
-        "foo"
-      ],
-      "properties": {
-        "foo": {
-          "type": "string"
-        },
-        "bar": {
-          "type": "integer"
-        }
-      }
-    },
-    "nestedtest": {
-      "type": "object",
-      "required": [
-        "top"
-      ],
-      "properties": {
-        "top": {
-          "type": "object",
-          "required": [
-            "nested"
-          ],
-          "properties": {
-            "nested": {
-              "type": "string"
-            }
-          }
-        }
-      }
-    },
-    "enumtest": {
-      "type": "string",
-      "enum": [
-        "foo",
-        "bar"
-      ]
-    },
-    "enumtestints": {
-      "type": "integer",
-      "enum": [
-        1,
-        2
-      ]
-    },
-    "enumtestbools": {
-      "type": "boolean",
-      "enum": [
-        true,
-        false
-      ]
-    },
-    "enumtestarrays": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "enum": [
-        [
-          "foo",
-          "bar"
-        ],
-        [
-          "baz",
-          "qux"
-        ]
-      ]
-    },
-    "enumobjecttest": {
-      "type": "object",
-      "enum": [
-        {
-          "foo": "bar"
-        },
-        {
-          "baz": "qux"
-        }
-      ]
-    },
-    "descriptiontest": {
-      "type": "string",
-      "description": "This is a description"
-    },
-    "descriptionenumtest": {
-      "type": "string",
-      "description": "This is a new description",
-      "enum": [
-        "foo",
-        "bar",
-        "baz"
-      ]
-    },
-    "minvaluetest": {
-      "type": "integer",
-      "minimum": 5
-    },
-    "maxvaluetest": {
-      "type": "integer",
-      "maximum": 10
-    },
-    "minmaxvaluetest": {
-      "type": "integer",
-      "minimum": 5,
-      "maximum": 10
-    },
-    "minlengthstringtest": {
-      "type": "string",
-      "minLength": 5
-    },
-    "maxlengthstringtest": {
-      "type": "string",
-      "maxLength": 10
-    },
-    "minmaxlengthstringtest": {
-      "type": "string",
-      "minLength": 5,
-      "maxLength": 10
-    },
-    "minlengtharraytest": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 2
-    },
-    "maxlengtharraytest": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "maxItems": 5
-    },
-    "minmaxlengtharraytest": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "minItems": 2,
-      "maxItems": 5
-    },
-    "defaultstringtest": {
-      "type": "string",
-      "default": "foo"
-    },
-    "defaultintegertest": {
-      "type": "integer",
-      "default": 5
-    },
-    "defaultbooltest": {
-      "type": "boolean",
-      "default": true
-    },
-    "defaultarraytest": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [
-        "foo",
-        "bar"
-      ]
-    },
-    "defaultobjecttest": {
-      "type": "object",
-      "required": [
-        "bar",
-        "foo"
-      ],
-      "properties": {
-        "bar": {
-          "type": "string"
-        },
-        "foo": {
-          "type": "integer"
-        }
-      },
-      "default": {
-        "bar": "baz",
-        "foo": 5
-      }
-    },
-    "defaultspaceobjecttest": {
-      "type": "object",
-      "required": [
-        "foo",
-        "lorem"
-      ],
-      "properties": {
-        "foo": {
-          "type": "string"
-        },
-        "lorem": {
-          "type": "string"
-        }
-      },
-      "default": {
-        "foo": "bar baz",
-        "lorem": "ipsum"
-      }
-    },
-    "defaultarrayobjecttest": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "bar",
-          "foo"
-        ],
-        "properties": {
-          "bar": {
+    "required": [
+        "stringtest",
+        "integertest",
+        "numbertest",
+        "booltest",
+        "arraytest",
+        "objecttest",
+        "nestedtest",
+        "enumtest"
+    ],
+    "properties": {
+        "stringtest": {
             "type": "string"
-          },
-          "foo": {
+        },
+        "integertest": {
             "type": "integer"
-          }
-        }
-      },
-      "default": [
-        {
-          "bar": "baz",
-          "foo": 5
         },
-        {
-          "bar": "qux",
-          "foo": 10
-        }
-      ]
-    },
-    "defaultnestedarraytest": {
-      "type": "array",
-      "items": {
-        "type": "array",
-        "items": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "default": [
-        [
-          [
-            "foo"
-          ],
-          [
-            "bar"
-          ]
-        ],
-        [
-          [
-            "baz"
-          ],
-          [
-            "qux"
-          ]
-        ]
-      ]
-    },
-    "defaultnestedobjecttest": {
-      "type": "object",
-      "required": [
-        "foo",
-        "quid"
-      ],
-      "properties": {
-        "foo": {
-          "type": "object",
-          "required": [
-            "bar"
-          ],
-          "properties": {
-            "bar": {
-              "type": "object",
-              "required": [
-                "baz"
-              ],
-              "properties": {
-                "baz": {
-                  "type": "string"
+        "numbertest": {
+            "type": "number"
+        },
+        "booltest": {
+            "type": "boolean"
+        },
+        "arraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            }
+        },
+        "objecttest": {
+            "type": "object",
+            "required": [
+                "foo"
+            ],
+            "properties": {
+                "foo": {
+                    "type": "string"
+                },
+                "bar": {
+                    "type": "integer"
                 }
-              }
             }
-          }
         },
-        "quid": {
-          "type": "object",
-          "required": [
-            "pro"
-          ],
-          "properties": {
-            "pro": {
-              "type": "string"
+        "nestedtest": {
+            "type": "object",
+            "required": [
+                "top"
+            ],
+            "properties": {
+                "top": {
+                    "type": "object",
+                    "required": [
+                        "nested"
+                    ],
+                    "properties": {
+                        "nested": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
-          }
-        }
-      },
-      "default": {
-        "foo": {
-          "bar": {
-            "baz": "qux"
-          }
         },
-        "quid": {
-          "pro": "quo"
+        "enumtest": {
+            "type": "string",
+            "enum": [
+                "foo",
+                "bar"
+            ]
+        },
+        "enumtestints": {
+            "type": "integer",
+            "enum": [
+                1,
+                2
+            ]
+        },
+        "enumtestbools": {
+            "type": "boolean",
+            "enum": [
+                true,
+                false
+            ]
+        },
+        "enumtestarrays": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "enum": [
+                [
+                    "foo",
+                    "bar"
+                ],
+                [
+                    "baz",
+                    "qux"
+                ]
+            ]
+        },
+        "enumobjecttest": {
+            "type": "object",
+            "enum": [
+                {
+                    "foo": "bar"
+                },
+                {
+                    "baz": "qux"
+                }
+            ]
+        },
+        "descriptiontest": {
+            "type": "string",
+            "description": "This is a description"
+        },
+        "descriptionenumtest": {
+            "type": "string",
+            "description": "This is a new description",
+            "enum": [
+                "foo",
+                "bar",
+                "baz"
+            ]
+        },
+        "minvaluetest": {
+            "type": "integer",
+            "minimum": 5
+        },
+        "maxvaluetest": {
+            "type": "integer",
+            "maximum": 10
+        },
+        "minmaxvaluetest": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 10
+        },
+        "minlengthstringtest": {
+            "type": "string",
+            "minLength": 5
+        },
+        "maxlengthstringtest": {
+            "type": "string",
+            "maxLength": 10
+        },
+        "minmaxlengthstringtest": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 10
+        },
+        "minlengtharraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 2
+        },
+        "maxlengtharraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "maxItems": 5
+        },
+        "minmaxlengtharraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 5
+        },
+        "defaultstringtest": {
+            "type": "string",
+            "default": "foo"
+        },
+        "defaultintegertest": {
+            "type": "integer",
+            "default": 5
+        },
+        "defaultbooltest": {
+            "type": "boolean",
+            "default": true
+        },
+        "defaultarraytest": {
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "default": [
+                "foo",
+                "bar"
+            ]
+        },
+        "defaultobjecttest": {
+            "type": "object",
+            "required": [
+                "bar",
+                "foo"
+            ],
+            "properties": {
+                "bar": {
+                    "type": "string"
+                },
+                "foo": {
+                    "type": "integer"
+                }
+            },
+            "default": {
+                "bar": "baz",
+                "foo": 5
+            }
+        },
+        "defaultspaceobjecttest": {
+            "type": "object",
+            "required": [
+                "foo",
+                "lorem"
+            ],
+            "properties": {
+                "foo": {
+                    "type": "string"
+                },
+                "lorem": {
+                    "type": "string"
+                }
+            },
+            "default": {
+                "foo": "bar baz",
+                "lorem": "ipsum"
+            }
+        },
+        "defaultarrayobjecttest": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "required": [
+                    "bar",
+                    "foo"
+                ],
+                "properties": {
+                    "bar": {
+                        "type": "string"
+                    },
+                    "foo": {
+                        "type": "integer"
+                    }
+                }
+            },
+            "default": [
+                {
+                    "bar": "baz",
+                    "foo": 5
+                },
+                {
+                    "bar": "qux",
+                    "foo": 10
+                }
+            ]
+        },
+        "defaultnestedarraytest": {
+            "type": "array",
+            "items": {
+                "type": "array",
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            },
+            "default": [
+                [
+                    [
+                        "foo"
+                    ],
+                    [
+                        "bar"
+                    ]
+                ],
+                [
+                    [
+                        "baz"
+                    ],
+                    [
+                        "qux"
+                    ]
+                ]
+            ]
+        },
+        "defaultnestedobjecttest": {
+            "type": "object",
+            "required": [
+                "foo",
+                "quid"
+            ],
+            "properties": {
+                "foo": {
+                    "type": "object",
+                    "required": [
+                        "bar"
+                    ],
+                    "properties": {
+                        "bar": {
+                            "type": "object",
+                            "required": [
+                                "baz"
+                            ],
+                            "properties": {
+                                "baz": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                },
+                "quid": {
+                    "type": "object",
+                    "required": [
+                        "pro"
+                    ],
+                    "properties": {
+                        "pro": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "default": {
+                "foo": {
+                    "bar": {
+                        "baz": "qux"
+                    }
+                },
+                "quid": {
+                    "pro": "quo"
+                }
+            }
+        },
+        "securestringtest": {
+            "type": "string",
+            "format": "password"
         }
-      }
-    },
-    "securestringtest": {
-      "type": "string",
-      "format": "password"
     }
-  }
 }
