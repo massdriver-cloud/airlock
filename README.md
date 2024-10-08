@@ -27,7 +27,7 @@ go get -u github.com/massdriver-cloud/airlock
 
 #### OpenTofu
 
-Bicep -> JSON Schema:
+OpenTofu -> JSON Schema:
 
 ```bash
 airlock opentofu input /path/to/module
