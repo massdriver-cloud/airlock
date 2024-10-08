@@ -138,7 +138,7 @@ JSON output:
 
 </details>
 
-JSON Schema -> Bicep:
+JSON Schema -> OpenTofu:
 
 ```bash
 airlock opentofu output /path/to/schema.json
