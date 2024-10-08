@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
-	"github.com/stretchr/testify/require"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestBicepToSchema(t *testing.T) {
@@ -178,7 +178,7 @@ func TestBicepToSchema(t *testing.T) {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			require.JSONEq(t, tc.want, string(bytes))
+			assert.JSONEq(t, tc.want, string(bytes))
 		})
 	}
 }
