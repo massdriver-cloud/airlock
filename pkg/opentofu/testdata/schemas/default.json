@@ -21,7 +21,9 @@
         },
         "arraytest": {
             "type": "array",
-            "default": ["foo"],
+            "default": [
+                "foo"
+            ],
             "items": {
                 "type": "string"
             }
@@ -31,7 +33,9 @@
             "default": {
                 "foo": "bar"
             },
-            "required": ["foo"],
+            "required": [
+                "foo"
+            ],
             "properties": {
                 "foo": {
                     "type": "string"
