@@ -21,7 +21,7 @@ generate: ${API_DIR}/zz_generated.go
 
 .PHONY: test
 test:
-	go test ./... -cover
+	go clean -testcache && go test ./... -cover
 
 bin:
 	mkdir bin
