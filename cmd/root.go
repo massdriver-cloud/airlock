@@ -36,6 +36,7 @@ func Execute() {
 	rootCmd.AddCommand(NewCmdHelm())
 	rootCmd.AddCommand(NewCmdOpenTofu())
 	rootCmd.AddCommand(NewCmdValidate())
+	rootCmd.AddCommand(NewCmdVersion())
 	if err := rootCmd.Execute(); err != nil {
 		os.Exit(1)
 	}

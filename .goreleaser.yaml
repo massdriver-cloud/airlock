@@ -13,10 +13,9 @@ builds:
     goarch:
       - amd64
       - arm64
-    # commented these out so i work on implementing them with airlock
-    # ldflags: &build-ldflags |
-    #   -X github.com/massdriver-cloud/mass/pkg/version.version={{.Version}}
-    #   -X github.com/massdriver-cloud/mass/pkg/version.gitSHA={{.FullCommit}}
+    ldflags: &build-ldflags |
+      -X github.com/massdriver-cloud/airlock/pkg/version.version={{.Version}}
+      -X github.com/massdriver-cloud/airlock/pkg/version.gitSHA={{.FullCommit}}
 
   - id: darwin-build
     binary: airlock
