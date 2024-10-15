@@ -804,3 +804,97 @@ JSON Schema output:
 ```
 
 </details>
+
+JSON Schema -> Bicep:
+
+```bash
+airlock bicep output /path/to/schema.json
+```
+
+<details>
+  <summary>Example</summary>
+
+`schema.json`:
+
+```json
+{
+  "properties": {
+    "firstName": {
+      "title": "First name",
+      "type": "string"
+    },
+    "lastName": {
+      "title": "Last name",
+      "type": "string"
+    },
+    "phoneNumber": {
+      "title": "Phone number",
+      "type": "string",
+      "minLength": 9,
+      "maxLength": 12
+    },
+    "email": {
+      "title": "Email",
+      "type": "string",
+      "minLength": 3
+    },
+    "age": {
+      "title": "Age",
+      "type": "integer",
+      "minimum": 1
+    },
+    "ssn": {
+      "title": "SSN",
+      "type": "string",
+      "format": "password",
+      "minLength": 9,
+      "maxLength": 9
+    },
+    "color": {
+      "title": "Favorite color",
+      "type": "string",
+      "enum": [
+        "Blue",
+        "Red",
+        "Yellow",
+        "Other"
+      ]
+    },
+    "active": {
+      "title": "User is active",
+      "description": "Is the user currently active?",
+      "type": "boolean",
+      "default": false
+    }
+  }
+}
+```
+
+Bicep output:
+
+```bicep
+param firstName string
+param lastName string
+@minLength(9)
+@maxLength(12)
+param phoneNumber string
+@minLength(3)
+param email string
+@minValue(1)
+param age int
+@minLength(9)
+@maxLength(9)
+@secure()
+param ssn string
+@allowed([
+  'Blue'
+  'Red'
+  'Yellow'
+  'Other'
+])
+param color string
+@sys.description('Is the user currently active?')
+param active bool = false
+```
+
+</details>
