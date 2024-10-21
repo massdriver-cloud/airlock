@@ -21,16 +21,16 @@ func NewCmdOpenTofu() *cobra.Command {
 	// Input
 	opentofuInputCmd := &cobra.Command{
 		Use:   `input`,
-		Short: "Ingest a OpenTofu module and generate a JSON Schema from the variables",
+		Short: "Ingest an OpenTofu module and generate a JSON Schema from the variables",
 		Args:  cobra.ExactArgs(1),
 		Long:  helpdocs.MustRender("opentofu/input"),
 		RunE:  runOpenTofuInput,
 	}
 
-	// oputput
+	// Output
 	opentofuOutputCmd := &cobra.Command{
 		Use:   `output`,
-		Short: "Output a OpenTofu variables specification from a JSON schemea document",
+		Short: "Output an OpenTofu variables specification from a JSON Schema document",
 		Args:  cobra.ExactArgs(1),
 		Long:  helpdocs.MustRender("opentofu/output"),
 		RunE:  runOpenTofuOutput,
