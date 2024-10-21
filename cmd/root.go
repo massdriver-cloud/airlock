@@ -12,11 +12,11 @@ import (
 // This has 4 spaces at the beginning to make it look nice in md. It
 // turns it into a code block which preserves spaces/returns
 var rootCmdHelp = `
- █████  ██████ ██████  ██      ██████   ██████ ██   ██
-██   ██   ██   ██   ██ ██     ██    ██ ██      ██  ██
-███████   ██   ██████  ██     ██    ██ ██      █████
-██   ██   ██   ██   ██ ██     ██    ██ ██      ██  ██
-██   ██ ██████ ██   ██ ██████  ██████   ██████ ██   ██
+        ___    ________  __    ____  ________ __
+       /   |  /  _/ __ \/ /   / __ \/ ____/ //_/
+      / /| |  / // /_/ / /   / / / / /   / ,<
+     / ___ |_/ // _, _/ /___/ /_/ / /___/ /| |
+    /_/  |_/___/_/ |_/_____/\____/\____/_/ |_|
 
 Translate between JSON Schema and common IaC languages
 `
