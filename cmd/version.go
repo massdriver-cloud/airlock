@@ -21,8 +21,7 @@ func NewCmdVersion() *cobra.Command {
 func runVersion(cmd *cobra.Command, args []string) {
 	latestVersion, err := version.GetLatestVersion()
 	if err != nil {
-		printErr := fmt.Errorf("could not check for newer version, skipping.\nurl: %s\nerror: %w", version.LatestReleaseURL, err)
-		fmt.Print(printErr.Error())
+		fmt.Printf("could not check for newer version, skipping.\nurl: %s\nerror: %v\n", version.LatestReleaseURL, err)
 	}
 
 	isOld, _ := version.CheckForNewerVersionAvailable(latestVersion)
