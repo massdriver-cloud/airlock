@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"reflect"
+	"sort"
 
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 )
@@ -199,7 +200,15 @@ func parseArray(arr []interface{}, prefix string) (string, error) {
 func parseObject(obj map[string]interface{}, prefix string) (string, error) {
 	parsedObj := "{\n"
 
-	for k, v := range obj {
+	keys := make([]string, 0, len(obj))
+	for k := range obj {
+		keys = append(keys, k)
+	}
+
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		v := obj[k]
 		renderedVal, err := renderBicep(v, prefix+indent)
 		if err != nil {
 			return "", err
