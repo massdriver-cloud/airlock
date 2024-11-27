@@ -83,7 +83,10 @@ func typeExprTokens(node *schema.Schema, optional bool) hclwrite.Tokens {
 }
 
 func convertArray(node *schema.Schema) hclwrite.Tokens {
-	return hclwrite.TokensForFunctionCall("list", typeExprTokens(node.Items, false))
+	if node.Items != nil {
+		return hclwrite.TokensForFunctionCall("list", typeExprTokens(node.Items, false))
+	}
+	return hclwrite.TokensForFunctionCall("list", hclwrite.TokensForIdentifier("any"))
 }
 
 func convertMap(node *schema.Schema) hclwrite.Tokens {
