@@ -29,6 +29,10 @@ func TestTofuToSchema(t *testing.T) {
 			name: "nestedany",
 			err:  "dynamic types are not supported (are you using type 'any'?)",
 		},
+		{
+			name: "empty",
+			err:  "type cannot be empty",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

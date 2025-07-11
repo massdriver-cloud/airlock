@@ -161,11 +161,8 @@ func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *
 }
 
 func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
-	if err := hydrateArraySchema(sch, name, ty, defaults); err != nil {
-		return err
-	}
 	sch.UniqueItems = true
-	return hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateArraySchema(sch, name, ty, defaults)
 }
 
 func ctyValueToInterface(val cty.Value) interface{} {
