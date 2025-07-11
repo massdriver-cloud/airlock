@@ -41,9 +41,9 @@ func TofuToSchema(modulePath string) (*schema.Schema, error) {
 
 func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	schema := new(schema.Schema)
-	variableType, defaults, err := variableTypeStringToCtyType(variable.Type)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", variable.Type, err)
+	variableType, defaults, typeErr := variableTypeStringToCtyType(variable.Type)
+	if typeErr != nil {
+		return nil, fmt.Errorf("failed to parse type %q: %w", variable.Type, typeErr)
 	}
 	// To simplify the logic of recursively walking the Defaults structure in objects types,
 	// we make the extracted Defaults a Child of a dummy "top level" node
@@ -54,8 +54,8 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 			variable.Name: defaults,
 		}
 	}
-	if err := hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault); err != nil {
-		return nil, fmt.Errorf("failed to hydrate schema for variable %q: %w", variable.Name, err)
+	if hydrateErr := hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault); hydrateErr != nil {
+		return nil, fmt.Errorf("failed to hydrate schema for variable %q: %w", variable.Name, hydrateErr)
 	}
 
 	schema.Description = variable.Description

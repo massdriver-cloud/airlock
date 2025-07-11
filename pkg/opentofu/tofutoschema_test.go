@@ -38,28 +38,28 @@ func TestTofuToSchema(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			modulePath := filepath.Join("testdata/opentofu", tc.name)
 
-			got, err := opentofu.TofuToSchema(modulePath)
-			if err != nil && tc.err == "" {
-				t.Fatalf("unexpected error: %s", err.Error())
+			got, schemaErr := opentofu.TofuToSchema(modulePath)
+			if schemaErr != nil && tc.err == "" {
+				t.Fatalf("unexpected error: %s", schemaErr.Error())
 			}
-			if tc.err != "" && err == nil {
+			if tc.err != "" && schemaErr == nil {
 				t.Fatalf("expected error %s, got nil", tc.err)
 			}
-			if tc.err != "" && !strings.Contains(err.Error(), tc.err) {
-				t.Fatalf("expected error %s, got %s", tc.err, err.Error())
+			if tc.err != "" && !strings.Contains(schemaErr.Error(), tc.err) {
+				t.Fatalf("expected error %s, got %s", tc.err, schemaErr.Error())
 			}
 			if tc.err != "" {
 				return
 			}
 
-			bytes, err := json.Marshal(got)
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err.Error())
+			bytes, marshalErr := json.Marshal(got)
+			if marshalErr != nil {
+				t.Fatalf("unexpected error: %s", marshalErr.Error())
 			}
 
-			want, err := os.ReadFile(filepath.Join("testdata/opentofu", tc.name, "schema.json"))
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err.Error())
+			want, readErr := os.ReadFile(filepath.Join("testdata/opentofu", tc.name, "schema.json"))
+			if readErr != nil {
+				t.Fatalf("unexpected error: %s", readErr.Error())
 			}
 
 			require.JSONEq(t, string(want), string(bytes))
