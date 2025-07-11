@@ -28,7 +28,7 @@ func TofuToSchema(modulePath string) (*schema.Schema, error) {
 	for _, variable := range module.Variables {
 		variableSchema, err := variableToSchema(variable)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("failed to convert variable %q to schema: %w", variable.Name, err)
 		}
 		sch.Properties.Set(variable.Name, variableSchema)
 		sch.Required = append(sch.Required, variable.Name)
@@ -41,9 +41,9 @@ func TofuToSchema(modulePath string) (*schema.Schema, error) {
 
 func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 	schema := new(schema.Schema)
-	variableType, defaults, err := variableTypeStringToCtyType(variable.Type)
-	if err != nil {
-		return nil, err
+	variableType, defaults, typeErr := variableTypeStringToCtyType(variable.Type)
+	if typeErr != nil {
+		return nil, fmt.Errorf("failed to parse type %q: %w", variable.Type, typeErr)
 	}
 	// To simplify the logic of recursively walking the Defaults structure in objects types,
 	// we make the extracted Defaults a Child of a dummy "top level" node
@@ -54,7 +54,9 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 			variable.Name: defaults,
 		}
 	}
-	hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault)
+	if hydrateErr := hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault); hydrateErr != nil {
+		return nil, fmt.Errorf("failed to hydrate schema for variable %q: %w", variable.Name, hydrateErr)
+	}
 
 	schema.Description = variable.Description
 
@@ -70,6 +72,12 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 }
 
 func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defaults, error) {
+	if variableType == "" {
+		return cty.NilType, nil, errors.New("type cannot be empty")
+	}
+	if variableType == "any" {
+		return cty.NilType, nil, errors.New("type 'any' cannot be converted to a JSON schema type")
+	}
 	expr, diags := hclsyntax.ParseExpression([]byte(variableType), "", hcl.Pos{Line: 1, Column: 1})
 	if len(diags) != 0 {
 		return cty.NilType, nil, errors.New(diags.Error())
@@ -81,7 +89,7 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defau
 	return ty, defaults, nil
 }
 
-func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
+func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.Title = name
 
 	if defaults != nil {
@@ -94,14 +102,19 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	if ty.IsPrimitiveType() {
 		hydratePrimitiveSchema(sch, ty)
 	} else if ty.IsMapType() {
-		hydrateMapSchema(sch, name, ty, defaults)
+		return hydrateMapSchema(sch, name, ty, defaults)
 	} else if ty.IsObjectType() {
-		hydrateObjectSchema(sch, name, ty, defaults)
+		return hydrateObjectSchema(sch, name, ty, defaults)
 	} else if ty.IsListType() {
-		hydrateArraySchema(sch, name, ty, defaults)
+		return hydrateArraySchema(sch, name, ty, defaults)
 	} else if ty.IsSetType() {
-		hydrateSetSchema(sch, name, ty, defaults)
+		return hydrateSetSchema(sch, name, ty, defaults)
+	} else if ty.HasDynamicTypes() {
+		return fmt.Errorf("dynamic types are not supported (are you using type 'any'?)")
+	} else {
+		return fmt.Errorf("unsupported type %q", ty.FriendlyName())
 	}
+	return nil
 }
 
 func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
@@ -115,39 +128,41 @@ func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
 	}
 }
 
-func hydrateObjectSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
+func hydrateObjectSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.Type = "object"
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	for attName, attType := range ty.AttributeTypes() {
 		attributeSchema := new(schema.Schema)
-		hydrateSchemaFromNameTypeAndDefaults(attributeSchema, attName, attType, getDefaultChildren(name, defaults))
+		if err := hydrateSchemaFromNameTypeAndDefaults(attributeSchema, attName, attType, getDefaultChildren(name, defaults)); err != nil {
+			return err
+		}
 		sch.Properties.Set(attName, attributeSchema)
 		if !ty.AttributeOptional(attName) {
 			sch.Required = append(sch.Required, attName)
 		}
 	}
 	slices.Sort(sch.Required)
+	return nil
 }
 
-func hydrateMapSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
+func hydrateMapSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.Type = "object"
 	sch.PropertyNames = &schema.Schema{
 		Pattern: "^.*$",
 	}
 	sch.AdditionalProperties = new(schema.Schema)
-	hydrateSchemaFromNameTypeAndDefaults(sch.AdditionalProperties.(*schema.Schema), "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateSchemaFromNameTypeAndDefaults(sch.AdditionalProperties.(*schema.Schema), "", ty.ElementType(), getDefaultChildren(name, defaults))
 }
 
-func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
+func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.Type = "array"
 	sch.Items = new(schema.Schema)
-	hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
 }
 
-func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) {
-	hydrateArraySchema(sch, name, ty, defaults)
+func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.UniqueItems = true
-	hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateArraySchema(sch, name, ty, defaults)
 }
 
 func ctyValueToInterface(val cty.Value) interface{} {
