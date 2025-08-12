@@ -73,10 +73,7 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 
 func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defaults, error) {
 	if variableType == "" {
-		return cty.NilType, nil, errors.New("type cannot be empty")
-	}
-	if variableType == "any" {
-		return cty.NilType, nil, errors.New("type 'any' cannot be converted to a JSON schema type")
+		variableType = "any"
 	}
 	expr, diags := hclsyntax.ParseExpression([]byte(variableType), "", hcl.Pos{Line: 1, Column: 1})
 	if len(diags) != 0 {
@@ -110,7 +107,7 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	} else if ty.IsSetType() {
 		return hydrateSetSchema(sch, name, ty, defaults)
 	} else if ty.HasDynamicTypes() {
-		return fmt.Errorf("dynamic types are not supported (are you using type 'any'?)")
+		return hydrateAnySchema(sch)
 	} else {
 		return fmt.Errorf("unsupported type %q", ty.FriendlyName())
 	}
@@ -163,6 +160,11 @@ func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *
 func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
 	sch.UniqueItems = true
 	return hydrateArraySchema(sch, name, ty, defaults)
+}
+
+func hydrateAnySchema(sch *schema.Schema) error {
+	sch.Comment = "Airlock warning: unconstrained type from OpenTofu/Terraform 'any'"
+	return nil
 }
 
 func ctyValueToInterface(val cty.Value) interface{} {

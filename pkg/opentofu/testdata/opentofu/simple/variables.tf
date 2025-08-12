@@ -89,3 +89,15 @@ variable "testmap" {
 variable "nodescription" {
   type = string
 }
+
+variable "any" {
+  type = any
+}
+
+variable "nestedany" {
+  type = object({
+    foo    = any
+  })
+}
+
+variable "empty" {}

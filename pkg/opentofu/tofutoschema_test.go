@@ -21,18 +21,6 @@ func TestTofuToSchema(t *testing.T) {
 		{
 			name: "simple",
 		},
-		{
-			name: "any",
-			err:  "type 'any' cannot be converted to a JSON schema type",
-		},
-		{
-			name: "nestedany",
-			err:  "dynamic types are not supported (are you using type 'any'?)",
-		},
-		{
-			name: "empty",
-			err:  "type cannot be empty",
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
