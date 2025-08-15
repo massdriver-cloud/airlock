@@ -9,6 +9,7 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/typeexpr"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
+	"github.com/massdriver-cloud/airlock/pkg/result"
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 	"github.com/massdriver-cloud/terraform-config-inspect/tfconfig"
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -16,34 +17,58 @@ import (
 	ctyjson "github.com/zclconf/go-cty/cty/json"
 )
 
-func TofuToSchema(modulePath string) (*schema.Schema, error) {
+func TofuToSchema(modulePath string) result.SchemaResult {
 	module, err := tfconfig.LoadModule(modulePath)
 	if err != nil {
-		return nil, err
+		return result.SchemaResult{
+			Schema: nil,
+			Diags: []result.Diagnostic{
+				{
+					Path:    modulePath,
+					Code:    "module_load_error",
+					Message: fmt.Sprintf("failed to load module: %s", err),
+					Level:   result.Error,
+				},
+			},
+		}
 	}
 
 	sch := new(schema.Schema)
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 
+	result := result.SchemaResult{
+		Schema: sch,
+		Diags:  []result.Diagnostic{},
+	}
+
 	for _, variable := range module.Variables {
-		variableSchema, err := variableToSchema(variable)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert variable %q to schema: %w", variable.Name, err)
+		variableSchema, diags := variableToSchema(variable, result.Diags)
+		result.Diags = diags
+
+		if variableSchema == nil {
+			continue
 		}
+
 		sch.Properties.Set(variable.Name, variableSchema)
 		sch.Required = append(sch.Required, variable.Name)
 	}
 
 	slices.Sort(sch.Required)
 
-	return sch, nil
+	return result
 }
 
-func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
+func variableToSchema(variable *tfconfig.Variable, diags []result.Diagnostic) (*schema.Schema, []result.Diagnostic) {
 	schema := new(schema.Schema)
 	variableType, defaults, typeErr := variableTypeStringToCtyType(variable.Type)
 	if typeErr != nil {
-		return nil, fmt.Errorf("failed to parse type %q: %w", variable.Type, typeErr)
+		diags = append(diags, result.Diagnostic{
+			Path:    variable.Name,
+			Code:    "variable_type_error",
+			Message: fmt.Sprintf("failed to parse type %q: %s", variable.Type, typeErr),
+			Level:   result.Error,
+		})
+		return nil, diags
 	}
 	// To simplify the logic of recursively walking the Defaults structure in objects types,
 	// we make the extracted Defaults a Child of a dummy "top level" node
@@ -54,9 +79,7 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 			variable.Name: defaults,
 		}
 	}
-	if hydrateErr := hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault); hydrateErr != nil {
-		return nil, fmt.Errorf("failed to hydrate schema for variable %q: %w", variable.Name, hydrateErr)
-	}
+	diags = hydrateSchemaFromNameTypeAndDefaults(schema, variable.Name, variableType, topLevelDefault, diags)
 
 	schema.Description = variable.Description
 
@@ -68,7 +91,7 @@ func variableToSchema(variable *tfconfig.Variable) (*schema.Schema, error) {
 		schema.Default = false
 	}
 
-	return schema, nil
+	return schema, diags
 }
 
 func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defaults, error) {
@@ -86,7 +109,7 @@ func variableTypeStringToCtyType(variableType string) (cty.Type, *typeexpr.Defau
 	return ty, defaults, nil
 }
 
-func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Title = name
 
 	if defaults != nil {
@@ -99,19 +122,25 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 	if ty.IsPrimitiveType() {
 		hydratePrimitiveSchema(sch, ty)
 	} else if ty.IsMapType() {
-		return hydrateMapSchema(sch, name, ty, defaults)
+		return hydrateMapSchema(sch, name, ty, defaults, diags)
 	} else if ty.IsObjectType() {
-		return hydrateObjectSchema(sch, name, ty, defaults)
+		return hydrateObjectSchema(sch, name, ty, defaults, diags)
 	} else if ty.IsListType() {
-		return hydrateArraySchema(sch, name, ty, defaults)
+		return hydrateArraySchema(sch, name, ty, defaults, diags)
 	} else if ty.IsSetType() {
-		return hydrateSetSchema(sch, name, ty, defaults)
+		return hydrateSetSchema(sch, name, ty, defaults, diags)
 	} else if ty.HasDynamicTypes() {
-		return hydrateAnySchema(sch)
+		return hydrateAnySchema(sch, diags)
 	} else {
-		return fmt.Errorf("unsupported type %q", ty.FriendlyName())
+		sch.Comment = fmt.Sprintf("unsupported OpenTofu/Terraform type '%s'", ty.FriendlyName())
+		return append(diags, result.Diagnostic{
+			Path:    name,
+			Code:    "unsupported_type",
+			Message: sch.Comment,
+			Level:   result.Warning,
+		})
 	}
-	return nil
+	return diags
 }
 
 func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
@@ -125,46 +154,49 @@ func hydratePrimitiveSchema(sch *schema.Schema, ty cty.Type) {
 	}
 }
 
-func hydrateObjectSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateObjectSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "object"
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	for attName, attType := range ty.AttributeTypes() {
 		attributeSchema := new(schema.Schema)
-		if err := hydrateSchemaFromNameTypeAndDefaults(attributeSchema, attName, attType, getDefaultChildren(name, defaults)); err != nil {
-			return err
-		}
+		diags = hydrateSchemaFromNameTypeAndDefaults(attributeSchema, attName, attType, getDefaultChildren(name, defaults), diags)
 		sch.Properties.Set(attName, attributeSchema)
 		if !ty.AttributeOptional(attName) {
 			sch.Required = append(sch.Required, attName)
 		}
 	}
 	slices.Sort(sch.Required)
-	return nil
+	return diags
 }
 
-func hydrateMapSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateMapSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "object"
 	sch.PropertyNames = &schema.Schema{
 		Pattern: "^.*$",
 	}
 	sch.AdditionalProperties = new(schema.Schema)
-	return hydrateSchemaFromNameTypeAndDefaults(sch.AdditionalProperties.(*schema.Schema), "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateSchemaFromNameTypeAndDefaults(sch.AdditionalProperties.(*schema.Schema), "", ty.ElementType(), getDefaultChildren(name, defaults), diags)
 }
 
-func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateArraySchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "array"
 	sch.Items = new(schema.Schema)
-	return hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults))
+	return hydrateSchemaFromNameTypeAndDefaults(sch.Items, "", ty.ElementType(), getDefaultChildren(name, defaults), diags)
 }
 
-func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults) error {
+func hydrateSetSchema(sch *schema.Schema, name string, ty cty.Type, defaults *typeexpr.Defaults, diags []result.Diagnostic) []result.Diagnostic {
 	sch.UniqueItems = true
-	return hydrateArraySchema(sch, name, ty, defaults)
+	return hydrateArraySchema(sch, name, ty, defaults, diags)
 }
 
-func hydrateAnySchema(sch *schema.Schema) error {
+func hydrateAnySchema(sch *schema.Schema, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Comment = "Airlock warning: unconstrained type from OpenTofu/Terraform 'any'"
-	return nil
+	return append(diags, result.Diagnostic{
+		Path:    sch.Title,
+		Code:    "unconstrained_type",
+		Message: "unconstrained type from OpenTofu/Terraform 'any'",
+		Level:   result.Warning,
+	})
 }
 
 func ctyValueToInterface(val cty.Value) interface{} {
