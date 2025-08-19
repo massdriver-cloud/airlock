@@ -142,7 +142,6 @@ func parseIntParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Di
 				Level:   result.Warning,
 			})
 		}
-
 	}
 
 	if bicepParam.MinValue != nil {
