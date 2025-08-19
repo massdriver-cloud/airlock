@@ -25,19 +25,19 @@ func TestTofuToSchema(t *testing.T) {
 				{
 					Path:    "any",
 					Code:    "unconstrained_type",
-					Message: "unconstrained type from OpenTofu/Terraform 'any'",
+					Message: "unconstrained type in field 'any' from OpenTofu/Terraform 'any'",
 					Level:   result.Warning,
 				},
 				{
 					Path:    "foo",
 					Code:    "unconstrained_type",
-					Message: "unconstrained type from OpenTofu/Terraform 'any'",
+					Message: "unconstrained type in field 'foo' from OpenTofu/Terraform 'any'",
 					Level:   result.Warning,
 				},
 				{
 					Path:    "empty",
 					Code:    "unconstrained_type",
-					Message: "unconstrained type from OpenTofu/Terraform 'any'",
+					Message: "unconstrained type in field 'empty' from OpenTofu/Terraform 'any'",
 					Level:   result.Warning,
 				},
 			},

@@ -14,13 +14,27 @@ func TestRun(t *testing.T) {
 	type testData struct {
 		name       string
 		valuesPath string
-		want       string
 		diags      []result.Diagnostic
+		want       string
 	}
 	tests := []testData{
 		{
 			name:       "simple",
 			valuesPath: "testdata/values.yaml",
+			diags: []result.Diagnostic{
+				{
+					Path:    "emptyArray",
+					Code:    "unknown_type",
+					Message: "array emptyArray is empty so it's type is unknown",
+					Level:   result.Warning,
+				},
+				{
+					Path:    "nullValue",
+					Code:    "unknown_type",
+					Message: "type of field nullValue is indeterminate (null)",
+					Level:   result.Warning,
+				},
+			},
 			want: `
 {
 	"required": [
@@ -102,20 +116,6 @@ func TestRun(t *testing.T) {
 	}
 }
 `,
-			diags: []result.Diagnostic{
-				{
-					Path:    "emptyArray",
-					Code:    "unknown_type",
-					Message: "array emptyArray is empty so it's type is unknown",
-					Level:   result.Warning,
-				},
-				{
-					Path:    "nullValue",
-					Code:    "unknown_type",
-					Message: "type of field nullValue is indeterminate (null)",
-					Level:   result.Warning,
-				},
-			},
 		},
 	}
 	for _, tc := range tests {

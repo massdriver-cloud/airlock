@@ -53,7 +53,7 @@ func BicepToSchema(templatePath string) result.SchemaResult {
 		}
 	}
 
-	result := result.SchemaResult{
+	output := result.SchemaResult{
 		Schema: sch,
 		Diags:  []result.Diagnostic{},
 	}
@@ -64,18 +64,30 @@ func BicepToSchema(templatePath string) result.SchemaResult {
 		// marshal to json and unmarshal into custom struct to make bicep param easier to access
 		bytes, marshalErr := json.Marshal(value)
 		if marshalErr != nil {
-			return nil, marshalErr
+			output.Diags = append(output.Diags, result.Diagnostic{
+				Path:    name,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("failed to marshal bicep param %s: %s", name, marshalErr),
+				Level:   result.Error,
+			})
+			continue
 		}
 		unmarshalErr := json.Unmarshal(bytes, &param)
 		if unmarshalErr != nil {
-			return nil, unmarshalErr
+			output.Diags = append(output.Diags, result.Diagnostic{
+				Path:    name,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("failed to unmarshal bicep param %s: %s", name, unmarshalErr),
+				Level:   result.Error,
+			})
+			continue
 		}
 
 		property := new(schema.Schema)
 		property.Title = name
 		property.Description = param.Metadata.Description
 
-		result.Diags = parseBicepParam(property, param, result.Diags)
+		output.Diags = parseBicepParam(property, param, output.Diags)
 
 		sch.Properties.Set(name, property)
 		sch.Required = append(sch.Required, name)
@@ -83,7 +95,7 @@ func BicepToSchema(templatePath string) result.SchemaResult {
 	// sorting this here just to help with testing. The order doesn't matter, but to our test suite it does.
 	slices.Sort(sch.Required)
 
-	return result
+	return output
 }
 
 func parseBicepParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Diagnostic) []result.Diagnostic {
@@ -101,6 +113,7 @@ func parseBicepParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.
 	case "object", "secureObject":
 		return parseObjectParam(sch, bicepParam, diags)
 	default:
+		sch.Comment = fmt.Sprintf("Airlock Warning: unknown type from Bicep parameter (%s)", bicepParam.TypeString)
 		return append(diags, result.Diagnostic{
 			Path:    sch.Title,
 			Code:    "unknown_type",
@@ -121,6 +134,7 @@ func parseIntParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Di
 		if ok {
 			sch.Enum = assertedEnum
 		} else {
+			sch.Comment = "Airlock Warning: unable to convert 'allowedValues' to enum"
 			diags = append(diags, result.Diagnostic{
 				Path:    sch.Title,
 				Code:    "invalid_value",
@@ -160,6 +174,7 @@ func parseStringParam(sch *schema.Schema, bicepParam *bicepParam, secure bool, d
 		if ok {
 			sch.Enum = assertedEnum
 		} else {
+			sch.Comment = "Airlock Warning: unable to convert 'allowedValues' to enum"
 			diags = append(diags, result.Diagnostic{
 				Path:    sch.Title,
 				Code:    "invalid_value",
@@ -225,6 +240,7 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}, diags 
 			property.Type = "object"
 			diags = parseObjectType(property, value.(map[string]interface{}), diags)
 		default:
+			sch.Comment = fmt.Sprintf("Airlock Warning: unknown type for field %s (%s)", name, reflect.TypeOf(value).Kind())
 			diags = append(diags, result.Diagnostic{
 				Path:    sch.Title,
 				Code:    "unknown_type",
@@ -263,6 +279,7 @@ func parseArrayType(sch *schema.Schema, value []interface{}, diags []result.Diag
 			items.Type = "object"
 			diags = parseObjectType(items, elem.(map[string]interface{}), diags)
 		default:
+			sch.Comment = fmt.Sprintf("Airlock Warning: unknown type (%s)", reflect.TypeOf(value).Kind())
 			diags = append(diags, result.Diagnostic{
 				Path:    sch.Title,
 				Code:    "unknown_type",

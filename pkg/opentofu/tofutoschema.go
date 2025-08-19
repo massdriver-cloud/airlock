@@ -136,7 +136,7 @@ func hydrateSchemaFromNameTypeAndDefaults(sch *schema.Schema, name string, ty ct
 		return append(diags, result.Diagnostic{
 			Path:    name,
 			Code:    "unsupported_type",
-			Message: sch.Comment,
+			Message: fmt.Sprintf("unsupported OpenTofu/Terraform type '%s' in field '%s'", ty.FriendlyName(), name),
 			Level:   result.Warning,
 		})
 	}
@@ -194,7 +194,7 @@ func hydrateAnySchema(sch *schema.Schema, diags []result.Diagnostic) []result.Di
 	return append(diags, result.Diagnostic{
 		Path:    sch.Title,
 		Code:    "unconstrained_type",
-		Message: "unconstrained type from OpenTofu/Terraform 'any'",
+		Message: fmt.Sprintf("unconstrained type in field '%s' from OpenTofu/Terraform 'any'", sch.Title),
 		Level:   result.Warning,
 	})
 }
