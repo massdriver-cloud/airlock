@@ -4,18 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/massdriver-cloud/airlock/pkg/prettylogs"
 )
 
 func (result *SchemaResult) PrettyDiags() string {
-	warningString := lipgloss.NewStyle().SetString("WARNING").Foreground(lipgloss.Color("#FFA500"))
-	errorString := lipgloss.NewStyle().SetString("ERROR").Foreground(lipgloss.Color("#FF0000"))
-
 	output := ""
 	for _, diag := range result.Diags {
-		levelString := warningString
+		levelString := prettylogs.Orange("WARNING")
 		if diag.Level == Error {
-			levelString = errorString
+			levelString = prettylogs.Red("ERROR")
 		}
 		output += fmt.Sprintf("Airlock %s: %s\n", levelString, diag.Message)
 	}
