@@ -16,7 +16,7 @@ type Schema struct {
 	Ref        string `json:"$ref,omitempty"`        // section 8.2.3.1
 	DynamicRef string `json:"$dynamicRef,omitempty"` // section 8.2.3.2
 	// Definitions Definitions `json:"$defs,omitempty"`       // section 8.2.4
-	Comments string `json:"$comment,omitempty"` // section 8.3
+	Comment string `json:"$comment,omitempty"` // section 8.3
 	// RFC draft-bhutton-json-schema-00 section 10.2.1 (Sub-schemas with logic)
 	AllOf []*Schema `json:"allOf,omitempty"` // section 10.2.1.1
 	AnyOf []*Schema `json:"anyOf,omitempty"` // section 10.2.1.2

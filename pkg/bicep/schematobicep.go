@@ -69,7 +69,7 @@ func writeBicepParam(name string, sch *schema.Schema, buf *bytes.Buffer, bicepTy
 		defVal = fmt.Sprintf(" = %s", renderedVal)
 	}
 
-	buf.WriteString(fmt.Sprintf("param %s %s%s\n", name, bicepType, defVal))
+	fmt.Fprintf(buf, "param %s %s%s\n", name, bicepType, defVal)
 	return nil
 }
 
@@ -120,7 +120,7 @@ func getBicepTypeFromSchema(schemaType string) (string, error) {
 func writeDescription(sch *schema.Schema, buf *bytes.Buffer) {
 	if sch.Description != "" {
 		// decorators are in sys namespace. to avoid potential collision with other parameters named "description", we use "sys.description" instead of just "description" https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/parameters#decorators
-		buf.WriteString(fmt.Sprintf("@sys.description('%s')\n", sch.Description))
+		fmt.Fprintf(buf, "@sys.description('%s')\n", sch.Description)
 	}
 }
 
@@ -131,7 +131,7 @@ func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) error {
 			return err
 		}
 
-		buf.WriteString(fmt.Sprintf("@allowed(%s)\n", renderedVal))
+		fmt.Fprintf(buf, "@allowed(%s)\n", renderedVal)
 	}
 	return nil
 }
@@ -139,13 +139,13 @@ func writeAllowedParams(sch *schema.Schema, buf *bytes.Buffer) error {
 func writeMinValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	if bicepType == "int" && sch.Minimum != "" {
 		// set this to %v because sch.Minimum uses json.Number type
-		buf.WriteString(fmt.Sprintf("@minValue(%v)\n", sch.Minimum))
+		fmt.Fprintf(buf, "@minValue(%v)\n", sch.Minimum)
 	}
 }
 
 func writeMaxValue(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	if bicepType == "int" && sch.Maximum != "" {
-		buf.WriteString(fmt.Sprintf("@maxValue(%v)\n", sch.Maximum))
+		fmt.Fprintf(buf, "@maxValue(%v)\n", sch.Maximum)
 	}
 }
 
@@ -153,11 +153,11 @@ func writeMinLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	switch bicepType {
 	case "array":
 		if sch.MinItems != nil {
-			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinItems))
+			fmt.Fprintf(buf, "@minLength(%d)\n", *sch.MinItems)
 		}
 	case "string":
 		if sch.MinLength != nil {
-			buf.WriteString(fmt.Sprintf("@minLength(%d)\n", *sch.MinLength))
+			fmt.Fprintf(buf, "@minLength(%d)\n", *sch.MinLength)
 		}
 	}
 }
@@ -166,11 +166,11 @@ func writeMaxLength(sch *schema.Schema, buf *bytes.Buffer, bicepType string) {
 	switch bicepType {
 	case "array":
 		if sch.MaxItems != nil {
-			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxItems))
+			fmt.Fprintf(buf, "@maxLength(%d)\n", *sch.MaxItems)
 		}
 	case "string":
 		if sch.MaxLength != nil {
-			buf.WriteString(fmt.Sprintf("@maxLength(%d)\n", *sch.MaxLength))
+			fmt.Fprintf(buf, "@maxLength(%d)\n", *sch.MaxLength)
 		}
 	}
 }

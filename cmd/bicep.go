@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
 
@@ -42,17 +41,11 @@ func NewCmdBicep() *cobra.Command {
 }
 
 func runBicepInput(cmd *cobra.Command, args []string) error {
-	schema, err := bicep.BicepToSchema(args[0])
-	if err != nil {
-		return err
-	}
+	result := bicep.BicepToSchema(args[0])
 
-	bytes, err := json.MarshalIndent(schema, "", "  ")
-	if err != nil {
-		return err
-	}
+	fmt.Print(result.PrettyDiags())
+	fmt.Print(result.PrettySchema())
 
-	fmt.Println(string(bytes))
 	return nil
 }
 

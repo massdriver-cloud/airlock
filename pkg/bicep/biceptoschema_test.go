@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/airlock/pkg/bicep"
+	"github.com/massdriver-cloud/airlock/pkg/result"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -12,12 +13,14 @@ func TestBicepToSchema(t *testing.T) {
 	type testData struct {
 		name      string
 		bicepPath string
+		diags     []result.Diagnostic
 		want      string
 	}
 	tests := []testData{
 		{
 			name:      "simple",
 			bicepPath: "testdata/template.bicep",
+			diags:     []result.Diagnostic{},
 			want: `
 {
 	"required": [
@@ -168,15 +171,14 @@ func TestBicepToSchema(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := bicep.BicepToSchema(tc.bicepPath)
+			got := bicep.BicepToSchema(tc.bicepPath)
+
+			bytes, err := json.Marshal(got.Schema)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
-			bytes, err := json.Marshal(got)
-			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
+			assert.ElementsMatch(t, tc.diags, got.Diags)
 
 			assert.JSONEq(t, tc.want, string(bytes))
 		})

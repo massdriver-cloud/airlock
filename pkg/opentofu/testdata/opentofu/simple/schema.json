@@ -1,5 +1,8 @@
 {
     "required": [
+        "any",
+        "empty",
+        "nestedany",
         "nodescription",
         "testbool",
         "testemptybool",
@@ -197,6 +200,27 @@
         "nodescription": {
             "title": "nodescription",
             "type": "string"
+        },
+        "any": {
+            "title": "any",
+            "$comment": "Airlock warning: unconstrained type from OpenTofu/Terraform 'any'"
+        },
+        "nestedany": {
+            "title": "nestedany",
+            "type": "object",
+            "properties": {
+                "foo": {
+                    "title": "foo",
+                    "$comment": "Airlock warning: unconstrained type from OpenTofu/Terraform 'any'"
+                }
+            },
+            "required": [
+                "foo"
+            ]
+        },
+        "empty": {
+            "title": "empty",
+            "$comment": "Airlock warning: unconstrained type from OpenTofu/Terraform 'any'"
         }
     }
 }

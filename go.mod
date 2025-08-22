@@ -11,7 +11,7 @@ require (
 	github.com/hashicorp/hcl/v2 v2.22.0
 	github.com/massdriver-cloud/terraform-config-inspect v0.0.1
 	github.com/spf13/cobra v1.8.1
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/xeipuuv/gojsonschema v1.2.0
 	github.com/zclconf/go-cty v1.15.0

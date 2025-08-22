@@ -2,12 +2,12 @@ package bicep
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"reflect"
 	"slices"
 
 	bp "github.com/Checkmarx/kics/v2/pkg/parser/bicep"
+	"github.com/massdriver-cloud/airlock/pkg/result"
 	"github.com/massdriver-cloud/airlock/pkg/schema"
 
 	orderedmap "github.com/wk8/go-ordered-map/v2"
@@ -29,81 +29,119 @@ type bicepParamMetadata struct {
 	Metadata    map[string]interface{} `json:"metadata"`
 }
 
-func BicepToSchema(templatePath string) (*schema.Schema, error) {
+func BicepToSchema(templatePath string) result.SchemaResult {
 	// using the github.com/Checkmarx/kics parser since he already did the heavy lifting to parse a bicep template
 	parser := bp.Parser{}
 
-	params := new(schema.Schema)
-	params.Type = "object"
-	params.Properties = orderedmap.New[string, *schema.Schema]()
-	params.Required = []string{}
+	sch := new(schema.Schema)
+	sch.Type = "object"
+	sch.Properties = orderedmap.New[string, *schema.Schema]()
+	sch.Required = []string{}
 
-	doc, _, err := parser.Parse(templatePath, nil)
-	if err != nil {
-		return nil, err
+	doc, _, parseErr := parser.Parse(templatePath, nil)
+	if parseErr != nil {
+		return result.SchemaResult{
+			Schema: nil,
+			Diags: []result.Diagnostic{
+				{
+					Path:    templatePath,
+					Code:    "file_read_error",
+					Message: fmt.Sprintf("failed to read bicep file: %s", parseErr),
+					Level:   result.Error,
+				},
+			},
+		}
+	}
+
+	output := result.SchemaResult{
+		Schema: sch,
+		Diags:  []result.Diagnostic{},
 	}
 
 	for name, value := range doc[0]["parameters"].(map[string]interface{}) {
-		param := bicepParam{}
+		param := new(bicepParam)
 
 		// marshal to json and unmarshal into custom struct to make bicep param easier to access
 		bytes, marshalErr := json.Marshal(value)
 		if marshalErr != nil {
-			return nil, marshalErr
+			output.Diags = append(output.Diags, result.Diagnostic{
+				Path:    name,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("failed to marshal bicep param %s: %s", name, marshalErr),
+				Level:   result.Error,
+			})
+			continue
 		}
 		unmarshalErr := json.Unmarshal(bytes, &param)
 		if unmarshalErr != nil {
-			return nil, unmarshalErr
+			output.Diags = append(output.Diags, result.Diagnostic{
+				Path:    name,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("failed to unmarshal bicep param %s: %s", name, unmarshalErr),
+				Level:   result.Error,
+			})
+			continue
 		}
 
 		property := new(schema.Schema)
 		property.Title = name
 		property.Description = param.Metadata.Description
 
-		parseErr := parseBicepParam(property, param)
-		if parseErr != nil {
-			return nil, parseErr
-		}
+		output.Diags = parseBicepParam(property, param, output.Diags)
 
-		params.Properties.Set(name, property)
-		params.Required = append(params.Required, name)
+		sch.Properties.Set(name, property)
+		sch.Required = append(sch.Required, name)
 	}
 	// sorting this here just to help with testing. The order doesn't matter, but to our test suite it does.
-	slices.Sort(params.Required)
+	slices.Sort(sch.Required)
 
-	return params, nil
+	return output
 }
 
-func parseBicepParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseBicepParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Diagnostic) []result.Diagnostic {
 	switch bicepParam.TypeString {
 	case "int":
-		return parseIntParam(sch, bicepParam)
+		return parseIntParam(sch, bicepParam, diags)
 	case "bool":
-		return parseBoolParam(sch, bicepParam)
+		parseBoolParam(sch, bicepParam)
 	case "string":
-		return parseStringParam(sch, bicepParam, false)
+		return parseStringParam(sch, bicepParam, false, diags)
 	case "secureString":
-		return parseStringParam(sch, bicepParam, true)
+		return parseStringParam(sch, bicepParam, true, diags)
 	case "array":
-		return parseArrayParam(sch, bicepParam)
+		return parseArrayParam(sch, bicepParam, diags)
 	case "object", "secureObject":
-		return parseObjectParam(sch, bicepParam)
+		return parseObjectParam(sch, bicepParam, diags)
 	default:
-		return errors.New("unknown type: " + bicepParam.TypeString)
+		sch.Comment = fmt.Sprintf("Airlock Warning: unknown type from Bicep parameter (%s)", bicepParam.TypeString)
+		return append(diags, result.Diagnostic{
+			Path:    sch.Title,
+			Code:    "unknown_type",
+			Message: fmt.Sprintf("type of field %s is unsupported (%s)", sch.Title, bicepParam.TypeString),
+			Level:   result.Warning,
+		})
 	}
+	return diags
 }
 
-func parseIntParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseIntParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "integer"
 	sch.Default = bicepParam.DefaultValue
 
 	allowedVals := bicepParam.AllowedValues
 	if len(allowedVals) == 1 {
 		assertedEnum, ok := allowedVals[0].([]interface{})
-		if !ok {
-			return fmt.Errorf("unable to cast %v to []interface{}", allowedVals)
+		if ok {
+			sch.Enum = assertedEnum
+		} else {
+			sch.Comment = "Airlock Warning: unable to convert 'allowedValues' to enum"
+			diags = append(diags, result.Diagnostic{
+				Path:    sch.Title,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("unable to convert 'allowedValues' to enum in bicep param %s", sch.Title),
+				Level:   result.Warning,
+			})
 		}
-		sch.Enum = assertedEnum
 	}
 
 	if bicepParam.MinValue != nil {
@@ -113,16 +151,15 @@ func parseIntParam(sch *schema.Schema, bicepParam bicepParam) error {
 		sch.Maximum = json.Number(fmt.Sprintf("%d", *bicepParam.MaxValue))
 	}
 
-	return nil
+	return diags
 }
 
-func parseBoolParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseBoolParam(sch *schema.Schema, bicepParam *bicepParam) {
 	sch.Type = "boolean"
 	sch.Default = bicepParam.DefaultValue
-	return nil
 }
 
-func parseStringParam(sch *schema.Schema, bicepParam bicepParam, secure bool) error {
+func parseStringParam(sch *schema.Schema, bicepParam *bicepParam, secure bool, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "string"
 	sch.Default = bicepParam.DefaultValue
 
@@ -133,46 +170,47 @@ func parseStringParam(sch *schema.Schema, bicepParam bicepParam, secure bool) er
 	allowedVals := bicepParam.AllowedValues
 	if len(allowedVals) == 1 {
 		assertedEnum, ok := allowedVals[0].([]interface{})
-		if !ok {
-			return fmt.Errorf("unable to cast %v to []interface{}", allowedVals)
+		if ok {
+			sch.Enum = assertedEnum
+		} else {
+			sch.Comment = "Airlock Warning: unable to convert 'allowedValues' to enum"
+			diags = append(diags, result.Diagnostic{
+				Path:    sch.Title,
+				Code:    "invalid_value",
+				Message: fmt.Sprintf("unable to convert 'allowedValues' to enum in bicep param %s", sch.Title),
+				Level:   result.Warning,
+			})
 		}
-		sch.Enum = assertedEnum
 	}
 
 	sch.MinLength = bicepParam.MinLength
 	sch.MaxLength = bicepParam.MaxLength
 
-	return nil
+	return diags
 }
 
-func parseArrayParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseArrayParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "array"
 
 	sch.MinItems = bicepParam.MinLength
 	sch.MaxItems = bicepParam.MaxLength
 
 	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.([]interface{})) != 0 {
-		err := parseArrayType(sch, bicepParam.DefaultValue.([]interface{}))
-		if err != nil {
-			return err
-		}
+		diags = parseArrayType(sch, bicepParam.DefaultValue.([]interface{}), diags)
 	}
-	return nil
+	return diags
 }
 
-func parseObjectParam(sch *schema.Schema, bicepParam bicepParam) error {
+func parseObjectParam(sch *schema.Schema, bicepParam *bicepParam, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Type = "object"
 
 	if bicepParam.DefaultValue != nil && len(bicepParam.DefaultValue.(map[string]interface{})) > 1 {
-		err := parseObjectType(sch, bicepParam.DefaultValue.(map[string]interface{}))
-		if err != nil {
-			return err
-		}
+		diags = parseObjectType(sch, bicepParam.DefaultValue.(map[string]interface{}), diags)
 	}
-	return nil
+	return diags
 }
 
-func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error {
+func parseObjectType(sch *schema.Schema, objValue map[string]interface{}, diags []result.Diagnostic) []result.Diagnostic {
 	sch.Properties = orderedmap.New[string, *schema.Schema]()
 	sch.Required = []string{}
 
@@ -196,18 +234,18 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error 
 			property.Default = value
 		case reflect.Slice:
 			property.Type = "array"
-			err := parseArrayType(property, value.([]interface{}))
-			if err != nil {
-				return err
-			}
+			diags = parseArrayType(property, value.([]interface{}), diags)
 		case reflect.Map:
 			property.Type = "object"
-			err := parseObjectType(property, value.(map[string]interface{}))
-			if err != nil {
-				return err
-			}
+			diags = parseObjectType(property, value.(map[string]interface{}), diags)
 		default:
-			return errors.New("unknown type: " + reflect.TypeOf(value).String())
+			sch.Comment = fmt.Sprintf("Airlock Warning: unknown type for field %s (%s)", name, reflect.TypeOf(value).Kind())
+			diags = append(diags, result.Diagnostic{
+				Path:    sch.Title,
+				Code:    "unknown_type",
+				Message: fmt.Sprintf("type of field %s is unsupported (%s)", sch.Title, reflect.TypeOf(value).Kind()),
+				Level:   result.Warning,
+			})
 		}
 
 		sch.Properties.Set(name, property)
@@ -215,10 +253,10 @@ func parseObjectType(sch *schema.Schema, objValue map[string]interface{}) error 
 		slices.Sort(sch.Required)
 	}
 
-	return nil
+	return diags
 }
 
-func parseArrayType(sch *schema.Schema, value []interface{}) error {
+func parseArrayType(sch *schema.Schema, value []interface{}, diags []result.Diagnostic) []result.Diagnostic {
 	if len(value) > 0 {
 		items := new(schema.Schema)
 
@@ -235,21 +273,21 @@ func parseArrayType(sch *schema.Schema, value []interface{}) error {
 			sch.Default = value
 		case reflect.Slice:
 			items.Type = "array"
-			err := parseArrayType(items, elem.([]interface{}))
-			if err != nil {
-				return err
-			}
+			diags = parseArrayType(items, elem.([]interface{}), diags)
 		case reflect.Map:
 			items.Type = "object"
-			err := parseObjectType(items, elem.(map[string]interface{}))
-			if err != nil {
-				return err
-			}
+			diags = parseObjectType(items, elem.(map[string]interface{}), diags)
 		default:
-			return errors.New("unknown type: " + reflect.TypeOf(elem).String())
+			sch.Comment = fmt.Sprintf("Airlock Warning: unknown type (%s)", reflect.TypeOf(value).Kind())
+			diags = append(diags, result.Diagnostic{
+				Path:    sch.Title,
+				Code:    "unknown_type",
+				Message: fmt.Sprintf("type of field %s is unsupported (%s)", sch.Title, reflect.TypeOf(value).Kind()),
+				Level:   result.Warning,
+			})
 		}
 
 		sch.Items = items
 	}
-	return nil
+	return diags
 }

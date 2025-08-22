@@ -5,19 +5,36 @@ import (
 	"testing"
 
 	"github.com/massdriver-cloud/airlock/pkg/helm"
+	"github.com/massdriver-cloud/airlock/pkg/result"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestRun(t *testing.T) {
 	type testData struct {
 		name       string
-		modulePath string
+		valuesPath string
+		diags      []result.Diagnostic
 		want       string
 	}
 	tests := []testData{
 		{
 			name:       "simple",
-			modulePath: "testdata/values.yaml",
+			valuesPath: "testdata/values.yaml",
+			diags: []result.Diagnostic{
+				{
+					Path:    "emptyArray",
+					Code:    "unknown_type",
+					Message: "array emptyArray is empty so it's type is unknown",
+					Level:   result.Warning,
+				},
+				{
+					Path:    "nullValue",
+					Code:    "unknown_type",
+					Message: "type of field nullValue is indeterminate (null)",
+					Level:   result.Warning,
+				},
+			},
 			want: `
 {
 	"required": [
@@ -25,7 +42,9 @@ func TestRun(t *testing.T) {
 		"age",
 		"height",
 		"object",
-		"array"
+		"array",
+		"emptyArray",
+		"nullValue"
 	],
 	"type": "object",
 	"properties": {
@@ -81,6 +100,18 @@ func TestRun(t *testing.T) {
 				"foo",
 				"bar"
 			]
+		},
+		"emptyArray": {
+			"title": "emptyArray",
+			"type": "array",
+			"description": "An empty array should not cause an error",
+			"items": {
+				"$comment": "Airlock Warning: unknown type from empty array"
+			}
+		},
+		"nullValue": {
+			"title": "nullValue",
+			"$comment": "Airlock Warning: unknown type from null value"
 		}
 	}
 }
@@ -89,17 +120,16 @@ func TestRun(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			got, err := helm.HelmToSchema(tc.modulePath)
-			if err != nil {
-				t.Fatalf("%d, unexpected error", err)
-			}
+			got := helm.HelmToSchema(tc.valuesPath)
 
-			bytes, err := json.Marshal(got)
+			bytes, err := json.Marshal(got.Schema)
 			if err != nil {
 				t.Fatalf("%d, unexpected error", err)
 			}
 
 			require.JSONEq(t, tc.want, string(bytes))
+
+			assert.ElementsMatch(t, tc.diags, got.Diags)
 		})
 	}
 }
