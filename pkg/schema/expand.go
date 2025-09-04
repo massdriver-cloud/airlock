@@ -27,7 +27,7 @@ func ExpandProperties(schema *Schema) *orderedmap.OrderedMap[string, *Schema] {
 		result = mergeProperties(result, allOf)
 	}
 
-	// if dependences is a map, we need to expand it
+	// if dependencies is a map, we need to expand it
 	if depdendentSchema, ok := schema.Dependencies.(map[string]*Schema); ok {
 		for _, item := range depdendentSchema {
 			dep := ExpandProperties(item)
