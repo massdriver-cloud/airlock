@@ -27,10 +27,12 @@ func ExpandProperties(schema *Schema) *orderedmap.OrderedMap[string, *Schema] {
 		result = mergeProperties(result, allOf)
 	}
 
-	// dependencies
-	for _, item := range schema.Dependencies {
-		dep := ExpandProperties(item)
-		result = mergeProperties(result, dep)
+	// if dependences is a map, we need to expand it
+	if depdendentSchema, ok := schema.Dependencies.(map[string]*Schema); ok {
+		for _, item := range depdendentSchema {
+			dep := ExpandProperties(item)
+			result = mergeProperties(result, dep)
+		}
 	}
 
 	return result

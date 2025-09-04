@@ -23,10 +23,11 @@ type Schema struct {
 	OneOf []*Schema `json:"oneOf,omitempty"` // section 10.2.1.3
 	Not   *Schema   `json:"not,omitempty"`   // section 10.2.1.4
 	// RFC draft-bhutton-json-schema-00 section 10.2.2 (Apply sub-schemas conditionally)
-	If           *Schema            `json:"if,omitempty"`           // section 10.2.2.1
-	Then         *Schema            `json:"then,omitempty"`         // section 10.2.2.2
-	Else         *Schema            `json:"else,omitempty"`         // section 10.2.2.3
-	Dependencies map[string]*Schema `json:"dependencies,omitempty"` // section 10.2.2.4
+	If              *Schema          `json:"if,omitempty"`           // section 10.2.2.1
+	Then            *Schema          `json:"then,omitempty"`         // section 10.2.2.2
+	Else            *Schema          `json:"else,omitempty"`         // section 10.2.2.3
+	DependenciesRaw *json.RawMessage `json:"dependencies,omitempty"` // section 10.2.2.4
+	Dependencies    any              `json:"-"`                      // section 10.2.2.4
 	// RFC draft-bhutton-json-schema-00 section 10.3.1 (arrays)
 	PrefixItems []*Schema `json:"prefixItems,omitempty"` // section 10.3.1.1
 	Items       *Schema   `json:"items,omitempty"`       // section 10.3.1.2  (replaces additionalItems)
@@ -36,7 +37,7 @@ type Schema struct {
 	Properties              *orderedmap.OrderedMap[string, *Schema] `json:"properties,omitempty"`
 	PatternProperties       map[string]*Schema                      `json:"patternProperties,omitempty"`    // section 10.3.2.2
 	AdditionalPropertiesRaw *json.RawMessage                        `json:"additionalProperties,omitempty"` // section 10.3.2.3
-	AdditionalProperties    interface{}                             `json:"-"`
+	AdditionalProperties    any                                     `json:"-"`
 	// AdditionalProperties *Schema `json:"additionalProperties,omitempty"` // section 10.3.2.3
 	PropertyNames *Schema `json:"propertyNames,omitempty"` // section 10.3.2.4
 	// RFC draft-bhutton-json-schema-validation-00, section 6

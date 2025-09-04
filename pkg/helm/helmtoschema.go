@@ -53,7 +53,9 @@ func HelmToSchema(valuesPath string) result.SchemaResult {
 
 	// the top level node is a document node. We need to go one layer
 	// deeper to get the actual yaml content
-	result.Diags = parseMapNode(sch, valuesDocument.Content[0], result.Diags)
+	if len(valuesDocument.Content) > 0 {
+		result.Diags = parseMapNode(sch, valuesDocument.Content[0], result.Diags)
+	}
 
 	return result
 }

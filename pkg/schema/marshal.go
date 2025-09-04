@@ -12,6 +12,15 @@ func (s *Schema) MarshalJSON() ([]byte, error) {
 		s.AdditionalPropertiesRaw = &addPropRaw
 	}
 
+	if s.Dependencies != nil {
+		dependenciesBytes, err := json.Marshal(s.Dependencies)
+		if err != nil {
+			return nil, err
+		}
+		dependenciesRaw := json.RawMessage(dependenciesBytes)
+		s.DependenciesRaw = &dependenciesRaw
+	}
+
 	type Alias Schema
 	return json.Marshal(&struct {
 		*Alias
@@ -50,6 +59,23 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 			s.AdditionalProperties = addPropBool
 		}
 		s.AdditionalPropertiesRaw = nil
+	}
+
+	if s.DependenciesRaw != nil {
+		var dependendentRequired []string
+		err := json.Unmarshal(*s.DependenciesRaw, &dependendentRequired)
+		if err != nil {
+			// dependencies is map, try to unmarshal as map[string]*Schema
+			var dependentSchema map[string]*Schema
+			err = json.Unmarshal(*s.DependenciesRaw, &dependentSchema)
+			if err != nil {
+				return err
+			}
+			s.Dependencies = dependentSchema
+		} else {
+			// dependencies is []string
+			s.Dependencies = dependendentRequired
+		}
 	}
 
 	return nil
