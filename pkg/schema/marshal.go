@@ -62,8 +62,8 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 	}
 
 	if s.DependenciesRaw != nil {
-		var dependendentRequired map[string][]string
-		err := json.Unmarshal(*s.DependenciesRaw, &dependendentRequired)
+		var dependentRequired map[string][]string
+		err := json.Unmarshal(*s.DependenciesRaw, &dependentRequired)
 		if err != nil {
 			// dependencies is map, try to unmarshal as map[string]*Schema
 			var dependentSchema map[string]*Schema
@@ -74,7 +74,7 @@ func (s *Schema) UnmarshalJSON(data []byte) error {
 			s.Dependencies = dependentSchema
 		} else {
 			// dependencies is map[string][]string
-			s.Dependencies = dependendentRequired
+			s.Dependencies = dependentRequired
 		}
 	}
 
