@@ -1,0 +1,62 @@
+{
+    "required": [
+        "single"
+    ],
+    "properties": {
+        "single": {
+            "type": "string"
+        }
+    },
+    "if": {
+        "properties": {
+            "single": {
+                "const": "foo"
+            }
+        }
+    },
+    "then": {
+        "required": ["then"],
+        "properties": {
+            "then": {
+                "type": "object",
+                "required": ["double"],
+                "properties": {
+                    "double": {
+                        "type": "string"
+                    }
+                },
+                "if": {
+                    "properties": {
+                        "double": {
+                            "const": "bar"
+                        }
+                    }
+                },
+                "then": {
+                    "required": ["another"],
+                    "properties": {
+                        "another": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "else": {
+                    "required": ["nested"],
+                    "properties": {
+                        "nested": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "else": {
+        "required": ["else"],
+        "properties": {
+            "else": {
+                "type": "string"
+            }
+        }
+    }
+}
