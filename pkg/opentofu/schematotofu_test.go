@@ -28,6 +28,9 @@ func TestSchemaToTofu(t *testing.T) {
 		{
 			name: "topleveldep",
 		},
+		{
+			name: "ifthenelse",
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

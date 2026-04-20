@@ -35,6 +35,15 @@ func ExpandProperties(schema *Schema) *orderedmap.OrderedMap[string, *Schema] {
 		}
 	}
 
+	if schema.If != nil {
+		if schema.Then != nil {
+			result = mergeProperties(result, ExpandProperties(schema.Then))
+		}
+		if schema.Else != nil {
+			result = mergeProperties(result, ExpandProperties(schema.Else))
+		}
+	}
+
 	return result
 }
 
